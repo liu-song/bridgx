@@ -46,7 +46,7 @@ func TestQueryOrders(t *testing.T) {
 		t.Log("len:", len(res.Orders))
 		for _, row := range res.Orders {
 			cnt += 1
-			if cnt > alibaba.SubOrderNumPerMain {
+			if cnt > 3 {
 				t.Log("---------------")
 				break
 			}

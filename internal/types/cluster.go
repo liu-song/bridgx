@@ -36,6 +36,7 @@ type NetworkConfig struct {
 	SecurityGroup           string `json:"security_group" binding:"required"`
 	InternetChargeType      string `json:"internet_charge_type"`
 	InternetMaxBandwidthOut int    `json:"internet_max_bandwidth_out"`
+	InternetIpType          string `json:"internet_ip_type"`
 }
 
 type StorageConfig struct {

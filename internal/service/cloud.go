@@ -11,16 +11,17 @@ import (
 	"github.com/Rican7/retry"
 	"github.com/Rican7/retry/backoff"
 	"github.com/Rican7/retry/strategy"
-
 	"github.com/galaxy-future/BridgX/internal/constants"
 	"github.com/galaxy-future/BridgX/internal/logs"
 	"github.com/galaxy-future/BridgX/internal/model"
 	"github.com/galaxy-future/BridgX/internal/types"
 	"github.com/galaxy-future/BridgX/pkg/cloud"
 	"github.com/galaxy-future/BridgX/pkg/cloud/alibaba"
+	"github.com/galaxy-future/BridgX/pkg/cloud/huawei"
 )
 
 var clientMap sync.Map
+var huaweiCliMap sync.Map
 
 func ExpandAndRepair(c *types.ClusterInfo, num int, taskId int64) ([]string, error) {
 	tags := []cloud.Tag{{
@@ -183,6 +184,7 @@ func generateParams(clusterInfo *types.ClusterInfo, tags []cloud.Tag) (params cl
 		SecurityGroup:           clusterInfo.NetworkConfig.SecurityGroup,
 		InternetChargeType:      clusterInfo.NetworkConfig.InternetChargeType,
 		InternetMaxBandwidthOut: clusterInfo.NetworkConfig.InternetMaxBandwidthOut,
+		InternetIpType:          clusterInfo.NetworkConfig.InternetIpType,
 	}
 	params.InstanceType = clusterInfo.InstanceType
 	params.Password = clusterInfo.Password
@@ -208,8 +210,10 @@ func getBatch(num, eachMax int) int {
 
 func getProvider(provider, ak, regionId string) (cloud.Provider, error) {
 	switch provider {
-	case alibaba.CloudName:
+	case cloud.AlibabaCloud:
 		return getAlibabaCloudClient(ak, regionId)
+	case cloud.HuaweiCloud:
+		return getHuaweiCloudClient(ak, regionId)
 	default:
 		return nil, errors.New("unavailable provider")
 	}
@@ -230,6 +234,24 @@ func getAlibabaCloudClient(ak, region string) (cloud.Provider, error) {
 	}
 	client, err := alibaba.New(ak, sk, region)
 	clientMap.Store(key, client)
+	return client, err
+}
+
+func getHuaweiCloudClient(ak, region string) (cloud.Provider, error) {
+	key := ak + region
+	v, exist := huaweiCliMap.Load(key)
+	if exist {
+		cast, ok := v.(*huawei.HuaweiCloud)
+		if ok {
+			return cast, nil
+		}
+	}
+	sk := model.GetAccountSecretByAccountKey(ak)
+	if sk == "" {
+		return nil, errors.New("no sk found")
+	}
+	client, err := huawei.New(ak, sk, region)
+	huaweiCliMap.Store(key, client)
 	return client, err
 }
 

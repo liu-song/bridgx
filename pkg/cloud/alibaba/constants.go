@@ -1,14 +1,27 @@
 package alibaba
 
-const (
-	PostPaid   = "Subscription"
-	PayAsYouGo = "PayAsYouGo"
-)
+import "github.com/galaxy-future/BridgX/pkg/cloud"
 
 const (
-	Paid      = "Paid"
-	Unpaid    = "Unpaid"
-	Cancelled = "Cancelled"
+	_subOrderNumPerMain    = 3
+	_maxNumEcsPerOperation = 100
 )
 
-const SubOrderNumPerMain = 3
+var _chargeType = map[string]string{
+	"Subscription": cloud.PrePaid,
+	"PayAsYouGo":   cloud.PostPaid,
+}
+
+var _payStatus = map[string]int8{
+	"Paid":      cloud.Paid,
+	"Unpaid":    cloud.Unpaid,
+	"Cancelled": cloud.Cancelled,
+}
+
+var _ecsStatus = map[string]string{
+	"Pending":  cloud.Building,
+	"Running":  cloud.Running,
+	"Starting": cloud.Starting,
+	"Stopping": cloud.Stopping,
+	"Stopped":  cloud.Stopped,
+}

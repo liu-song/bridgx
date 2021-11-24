@@ -15,7 +15,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/galaxy-future/BridgX/internal/constants"
 	"github.com/galaxy-future/BridgX/internal/logs"
 	"github.com/galaxy-future/BridgX/pkg/cloud"
 	"github.com/galaxy-future/BridgX/pkg/utils"
@@ -80,7 +79,7 @@ func generateInstances(cloudInstance []ecs.Instance) (instances []cloud.Instance
 		instances = append(instances, cloud.Instance{
 			Id:       instance.InstanceId,
 			CostWay:  instance.InstanceChargeType,
-			Provider: CloudName,
+			Provider: cloud.AlibabaCloud,
 			IpInner:  strings.Join(instance.VpcAttributes.PrivateIpAddress.IpAddress, ","),
 			IpOuter:  ipOuter,
 			ImageId:  instance.ImageId,
@@ -92,15 +91,11 @@ func generateInstances(cloudInstance []ecs.Instance) (instances []cloud.Instance
 				InternetChargeType:      instance.InternetChargeType,
 				InternetMaxBandwidthOut: instance.InternetMaxBandwidthOut,
 			},
-			Status: instance.Status,
+			Status: _ecsStatus[instance.Status],
 		})
 	}
 	return
 }
-
-const (
-	CloudName = "AlibabaCloud"
-)
 
 func New(AK, SK, region string) (*AlibabaCloud, error) {
 	client, err := ecs.NewClientWithAccessKey(region, AK, SK)
@@ -206,25 +201,34 @@ func (p *AlibabaCloud) BatchDelete(ids []string, regionId string) (err error) {
 	return err
 }
 
-func (p *AlibabaCloud) StartInstance(id string) error {
-	request := ecs.CreateStartInstanceRequest()
+func (p *AlibabaCloud) StartInstances(ids []string) error {
+	batchIds := utils.StringSliceSplit(ids, _maxNumEcsPerOperation)
+	request := ecs.CreateStartInstancesRequest()
 	request.Scheme = "https"
-
-	request.InstanceId = id
-
-	response, err := p.client.StartInstance(request)
-	logs.Logger.Infof("[StartInstance] requestId: %s", response.RequestId)
-	return err
+	for _, onceIds := range batchIds {
+		request.InstanceId = &onceIds
+		res, err := p.client.StartInstances(request)
+		if err != nil {
+			return err
+		}
+		logs.Logger.Debug(res)
+	}
+	return nil
 }
 
-func (p *AlibabaCloud) StopInstance(id string) error {
-	request := ecs.CreateStopInstanceRequest()
+func (p *AlibabaCloud) StopInstances(ids []string) error {
+	batchIds := utils.StringSliceSplit(ids, _maxNumEcsPerOperation)
+	request := ecs.CreateStopInstancesRequest()
 	request.Scheme = "https"
-	request.InstanceId = id
-
-	response, err := p.client.StopInstance(request)
-	logs.Logger.Infof("[StopInstance] requestId: %s", response.RequestId)
-	return err
+	for _, onceIds := range batchIds {
+		request.InstanceId = &onceIds
+		res, err := p.client.StopInstances(request)
+		if err != nil {
+			return err
+		}
+		logs.Logger.Debug(res)
+	}
+	return nil
 }
 
 func (p *AlibabaCloud) GetInstancesByCluster(regionId, clusterName string) (instances []cloud.Instance, err error) {
@@ -669,7 +673,7 @@ func (p *AlibabaCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.De
 }
 
 func (*AlibabaCloud) ProviderType() string {
-	return CloudName
+	return cloud.AlibabaCloud
 }
 
 func (p *AlibabaCloud) DescribeGroupRules(req cloud.DescribeGroupRulesRequest) (cloud.DescribeGroupRulesResponse, error) {
@@ -716,16 +720,6 @@ func (p *AlibabaCloud) DescribeGroupRules(req cloud.DescribeGroupRulesRequest) (
 	return cloud.DescribeGroupRulesResponse{Rules: rules}, nil
 }
 
-var ChargeType = map[string]string{
-	PostPaid:   constants.PostPaid,
-	PayAsYouGo: constants.PayAsYouGo,
-}
-var PayStatus = map[string]int8{
-	Paid:      constants.Paid,
-	Unpaid:    constants.Unpaid,
-	Cancelled: constants.Cancelled,
-}
-
 func (p *AlibabaCloud) GetOrders(req cloud.GetOrdersRequest) (cloud.GetOrdersResponse, error) {
 	request := bssopenapi.CreateQueryOrdersRequest()
 	request.Scheme = "https"
@@ -745,7 +739,7 @@ func (p *AlibabaCloud) GetOrders(req cloud.GetOrdersRequest) (cloud.GetOrdersRes
 		return cloud.GetOrdersResponse{}, nil
 	}
 
-	orders := make([]cloud.Order, 0, orderNum*SubOrderNumPerMain)
+	orders := make([]cloud.Order, 0, orderNum*_subOrderNumPerMain)
 	detailReq := bssopenapi.CreateGetOrderDetailRequest()
 	detailReq.Scheme = "https"
 	for _, row := range response.Data.OrderList.Order {
@@ -765,7 +759,7 @@ func (p *AlibabaCloud) GetOrders(req cloud.GetOrdersRequest) (cloud.GetOrdersRes
 			orderTime, _ := time.Parse("2006-01-02T15:04:05Z", subOrder.CreateTime)
 			usageStartTime, _ := time.Parse("2006-01-02T15:04:05Z", subOrder.UsageStartTime)
 			usageEndTime, _ := time.Parse("2006-01-02T15:04:05Z", subOrder.UsageEndTime)
-			if subOrder.SubscriptionType == PayAsYouGo && usageEndTime.Sub(usageStartTime).Hours() > 24*365*20 {
+			if _chargeType[subOrder.SubscriptionType] == cloud.PostPaid && usageEndTime.Sub(usageStartTime).Hours() > 24*365*20 {
 				usageEndTime, _ = time.Parse("2006-01-02 15:04:05", "2038-01-01 00:00:00")
 			}
 
@@ -777,8 +771,8 @@ func (p *AlibabaCloud) GetOrders(req cloud.GetOrdersRequest) (cloud.GetOrdersRes
 				UsageStartTime: usageStartTime,
 				UsageEndTime:   usageEndTime,
 				RegionId:       subOrder.Region,
-				ChargeType:     ChargeType[subOrder.SubscriptionType],
-				PayStatus:      PayStatus[subOrder.PaymentStatus],
+				ChargeType:     _chargeType[subOrder.SubscriptionType],
+				PayStatus:      _payStatus[subOrder.PaymentStatus],
 				Currency:       subOrder.Currency,
 				Cost:           cast.ToFloat32(subOrder.PretaxAmount),
 				Extend: map[string]interface{}{

@@ -12,7 +12,6 @@ import (
 	"github.com/galaxy-future/BridgX/internal/service"
 	"github.com/galaxy-future/BridgX/internal/types"
 	"github.com/galaxy-future/BridgX/pkg/cloud"
-	"github.com/galaxy-future/BridgX/pkg/cloud/alibaba"
 	"github.com/galaxy-future/BridgX/pkg/utils"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +30,7 @@ func TestCreateClusterByApi(t *testing.T) {
 		//ZoneId:       "cn-beijing-h",
 		InstanceType: "ecs.g6.large",
 		Image:        "centos_8_4_uefi_x64_20G_alibase_20210611.vhd",
-		Provider:     alibaba.CloudName,
+		Provider:     cloud.AlibabaCloud,
 		Password:     "ASDqwe123",
 		AccountKey:   "LTAI5tAwAMpXAQ78pePcRb6t",
 		NetworkConfig: &types.NetworkConfig{
@@ -83,7 +82,7 @@ func TestExpandClusterUseMockCluster(t *testing.T) {
 		ZoneId:       "cn-beijing-h",
 		InstanceType: "ecs.s6-c1m1.small",
 		Image:        "centos_7_9_x64_20G_alibase_20210623.vhd",
-		Provider:     alibaba.CloudName,
+		Provider:     cloud.AlibabaCloud,
 		Password:     "ASDqwe123",
 		AccountKey:   "LTAI5tAwAMpXAQ78pePcRb6t",
 		NetworkConfig: &types.NetworkConfig{
@@ -110,7 +109,7 @@ func TestExpandClusterUseMockCluster(t *testing.T) {
 func TestGetInstance(t *testing.T) {
 	cluster := types.ClusterInfo{
 		RegionId:   "cn-beijing",
-		Provider:   alibaba.CloudName,
+		Provider:   cloud.AlibabaCloud,
 		AccountKey: "LTAI5tAwAMpXAQ78pePcRb6t",
 	}
 	res, err := service.GetInstances(&cluster, []string{"i-2ze5ysm1hx7o9q3mz218", "i-2ze5ysm1hx7o9q3mz219"})
@@ -121,7 +120,7 @@ func TestGetInstance(t *testing.T) {
 func TestShrink(t *testing.T) {
 	cluster := types.ClusterInfo{
 		RegionId:   "cn-beijing",
-		Provider:   alibaba.CloudName,
+		Provider:   cloud.AlibabaCloud,
 		AccountKey: "LTAI5tAwAMpXAQ78pePcRb6t",
 	}
 	err := service.Shrink(&cluster, []string{"i-2ze5ysm1hx7o9q3mz218", "i-2ze5ysm1hx7o9q3mz219"})

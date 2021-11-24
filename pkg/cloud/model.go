@@ -5,12 +5,6 @@ import (
 )
 
 const (
-	Pending     = "Pending"
-	TaskId      = "TaskId"
-	ClusterName = "ClusterName"
-)
-
-const (
 	InstanceChargeTypePrePaid  = "PrePaid"
 	InstanceChargeTypePostPaid = "PostPaid"
 )
@@ -51,6 +45,7 @@ type Network struct {
 	SecurityGroup           string `json:"security_group"`
 	InternetChargeType      string `json:"internet_charge_type"`
 	InternetMaxBandwidthOut int    `json:"internet_max_bandwidth_out"`
+	InternetIpType          string `json:"internet_ip_type"`
 }
 
 type Charge struct {
