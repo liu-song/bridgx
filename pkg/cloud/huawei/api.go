@@ -64,81 +64,6 @@ func (HuaweiCloud) ProviderType() string {
 	return cloud.HuaweiCloud
 }
 
-func (p *HuaweiCloud) CreateVPC(req cloud.CreateVpcRequest) (cloud.CreateVpcResponse, error) {
-
-	return cloud.CreateVpcResponse{}, nil
-}
-
-func (p *HuaweiCloud) GetVPC(req cloud.GetVpcRequest) (cloud.GetVpcResponse, error) {
-
-	return cloud.GetVpcResponse{}, nil
-}
-
-func (p HuaweiCloud) DescribeVpcs(req cloud.DescribeVpcsRequest) (cloud.DescribeVpcsResponse, error) {
-	var page int32 = 1
-	vpcs := make([]cloud.VPC, 0, 128)
-	for {
-
-		if 1 > page*50 {
-			page++
-		} else {
-			break
-		}
-	}
-
-	return cloud.DescribeVpcsResponse{Vpcs: vpcs}, nil
-}
-
-func (p *HuaweiCloud) CreateSwitch(req cloud.CreateSwitchRequest) (cloud.CreateSwitchResponse, error) {
-
-	return cloud.CreateSwitchResponse{}, nil
-}
-
-func (p *HuaweiCloud) GetSwitch(req cloud.GetSwitchRequest) (cloud.GetSwitchResponse, error) {
-
-	return cloud.GetSwitchResponse{}, nil
-}
-
-func (p HuaweiCloud) DescribeSwitches(req cloud.DescribeSwitchesRequest) (cloud.DescribeSwitchesResponse, error) {
-	var page int32 = 1
-	switches := make([]cloud.Switch, 0, 128)
-	for {
-
-		if 1 > page*50 {
-			page++
-		} else {
-			break
-		}
-	}
-
-	return cloud.DescribeSwitchesResponse{Switches: switches}, nil
-}
-
-func (p *HuaweiCloud) CreateSecurityGroup(req cloud.CreateSecurityGroupRequest) (cloud.CreateSecurityGroupResponse, error) {
-
-	return cloud.CreateSecurityGroupResponse{}, nil
-}
-
-func (p HuaweiCloud) AddIngressSecurityGroupRule(req cloud.AddSecurityGroupRuleRequest) error {
-
-	return nil
-}
-
-func (p HuaweiCloud) AddEgressSecurityGroupRule(req cloud.AddSecurityGroupRuleRequest) error {
-
-	return nil
-}
-
-func (p HuaweiCloud) DescribeSecurityGroups(req cloud.DescribeSecurityGroupsRequest) (cloud.DescribeSecurityGroupsResponse, error) {
-	return cloud.DescribeSecurityGroupsResponse{}, nil
-}
-
-func (p *HuaweiCloud) DescribeGroupRules(req cloud.DescribeGroupRulesRequest) (cloud.DescribeGroupRulesResponse, error) {
-	rules := make([]cloud.SecurityGroupRule, 0, 128)
-
-	return cloud.DescribeGroupRulesResponse{Rules: rules}, nil
-}
-
 // GetRegions 暂时返回中文名字
 func (p *HuaweiCloud) GetRegions() (cloud.GetRegionsResponse, error) {
 	request := &iamModel.KeystoneListRegionsRequest{}
@@ -160,15 +85,27 @@ func (p *HuaweiCloud) GetRegions() (cloud.GetRegionsResponse, error) {
 	return cloud.GetRegionsResponse{Regions: regions}, nil
 }
 
-// DescribeImages osType转成字符串
+// DescribeImages osType转成字符串;返回太多了
 func (p *HuaweiCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.DescribeImagesResponse, error) {
+	pageSize := 500
 	request := &imsModel.ListImagesRequest{}
-	limitRequest := int32(_pageSize)
+	sortDirRequest := imsModel.GetListImagesRequestSortDirEnum().DESC
+	request.SortDir = &sortDirRequest
+	sortKeyRequest := imsModel.GetListImagesRequestSortKeyEnum().NAME
+	request.SortKey = &sortKeyRequest
+	statusRequest := imsModel.GetListImagesRequestStatusEnum().ACTIVE
+	request.Status = &statusRequest
+	if req.FlavorId != "" {
+		request.FlavorId = &req.FlavorId
+	}
+	limitRequest := int32(pageSize)
 	request.Limit = &limitRequest
 	markerRequest := ""
-	images := make([]cloud.Image, 0, _pageSize)
+	images := make([]cloud.Image, 0, pageSize)
 	for {
-		request.Marker = &markerRequest
+		if markerRequest != "" {
+			request.Marker = &markerRequest
+		}
 		response, err := p.imsClient.ListImages(request)
 		if err != nil {
 			return cloud.DescribeImagesResponse{}, err
@@ -186,7 +123,7 @@ func (p *HuaweiCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.Des
 				OsName:  *img.OsVersion,
 			})
 		}
-		if len(*response.Images) < _pageSize {
+		if len(*response.Images) < pageSize {
 			break
 		}
 	}

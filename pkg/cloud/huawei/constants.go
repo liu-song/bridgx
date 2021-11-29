@@ -47,3 +47,8 @@ var _ecsStatus = map[string]string{
 	"ERROR":         cloud.Abnormal,
 	"DELETED":       cloud.Deleted,
 }
+
+var _secGrpRuleDirection = map[string]string{
+	"ingress": cloud.InSecGroupRule,
+	"egress":  cloud.OutSecGroupRule,
+}

@@ -23,8 +23,6 @@ import (
 )
 
 const (
-	DirectionIn    = "ingress"
-	DirectionOut   = "egress"
 	Instancetype   = "InstanceType"
 	AcceptLanguage = "zh-CN"
 )
@@ -690,12 +688,12 @@ func (p *AlibabaCloud) DescribeGroupRules(req cloud.DescribeGroupRulesRequest) (
 	if response != nil && response.Body != nil && response.Body.Permissions != nil {
 		for _, rule := range response.Body.Permissions.Permission {
 			var otherGroupId, cidrIp, prefixListId string
-			switch *rule.Direction {
-			case DirectionIn:
+			switch _secGrpRuleDirection[*rule.Direction] {
+			case cloud.InSecGroupRule:
 				otherGroupId = *rule.SourceGroupId
 				cidrIp = *rule.SourceCidrIp
 				prefixListId = *rule.SourcePrefixListId
-			case DirectionOut:
+			case cloud.OutSecGroupRule:
 				otherGroupId = *rule.DestGroupId
 				cidrIp = *rule.DestCidrIp
 				prefixListId = *rule.DestPrefixListId
@@ -705,7 +703,7 @@ func (p *AlibabaCloud) DescribeGroupRules(req cloud.DescribeGroupRulesRequest) (
 				SecurityGroupId: *response.Body.SecurityGroupId,
 				PortRange:       *rule.PortRange,
 				Protocol:        *rule.IpProtocol,
-				Direction:       *rule.Direction,
+				Direction:       _secGrpRuleDirection[*rule.Direction],
 				GroupId:         otherGroupId,
 				CidrIp:          cidrIp,
 				PrefixListId:    prefixListId,

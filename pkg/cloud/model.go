@@ -198,6 +198,7 @@ type Zone struct {
 }
 
 type InstanceType struct {
+	InstanceInfo
 	Status         string
 	StatusCategory string
 	Value          string
@@ -232,6 +233,7 @@ type DescribeInstanceTypesResponse struct {
 }
 type DescribeImagesRequest struct {
 	RegionId string
+	FlavorId string
 }
 
 type DescribeImagesResponse struct {

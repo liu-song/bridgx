@@ -35,3 +35,8 @@ const (
 	Abnormal = "Abnormal"
 	Deleted  = "Deleted"
 )
+
+const (
+	InSecGroupRule  = "ingress"
+	OutSecGroupRule = "egress"
+)

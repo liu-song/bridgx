@@ -104,6 +104,9 @@ func (p *HuaweiCloud) GetInstances(ids []string) (instances []cloud.Instance, er
 	request := &model.ShowServerRequest{}
 	ecsInfos := make([]model.ServerDetail, 0, idNum)
 	for _, id := range ids {
+		if id == "" {
+			continue
+		}
 		request.ServerId = id
 		response, err := p.ecsClient.ShowServer(request)
 		if err != nil {
@@ -264,35 +267,48 @@ func (p *HuaweiCloud) GetZones(req cloud.GetZonesRequest) (cloud.GetZonesRespons
 	return cloud.GetZonesResponse{Zones: zones}, nil
 }
 
-//DescribeAvailableResource 无对应接口,相关流程可能得调整
+//DescribeAvailableResource 华为云不仅返回id,还返回了机型详情；返回缺少zoneid;StatusCategory机型状态统一与必要性。相关流程可能得调整
 func (p *HuaweiCloud) DescribeAvailableResource(req cloud.DescribeAvailableResourceRequest) (cloud.DescribeAvailableResourceResponse, error) {
-	return cloud.DescribeAvailableResourceResponse{}, nil
-}
-
-//DescribeInstanceTypes Family字段不明确；阿里云用了参数 req.TypeName
-func (p *HuaweiCloud) DescribeInstanceTypes(req cloud.DescribeInstanceTypesRequest) (cloud.DescribeInstanceTypesResponse, error) {
 	request := &model.ListFlavorsRequest{}
+	zoneId := "zoneId"
+	if req.ZoneId != "" {
+		zoneId = req.ZoneId
+		request.AvailabilityZone = &zoneId
+	}
 	response, err := p.ecsClient.ListFlavors(request)
 	if err != nil {
-		return cloud.DescribeInstanceTypesResponse{}, err
+		return cloud.DescribeAvailableResourceResponse{}, err
 	}
 	if response.HttpStatusCode != 200 {
-		return cloud.DescribeInstanceTypesResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+		return cloud.DescribeAvailableResourceResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
 	}
 
-	insTypeInfo := make([]cloud.InstanceInfo, 0, len(*response.Flavors))
+	insType := make([]cloud.InstanceType, 0, len(*response.Flavors))
 	for _, flavor := range *response.Flavors {
-		insTypeInfo = append(insTypeInfo, cloud.InstanceInfo{
-			Core:        cast.ToInt(flavor.Vcpus),
-			Memory:      cast.ToInt(flavor.Ram),
-			Family:      *flavor.OsExtraSpecs.Ecsperformancetype,
-			InsTypeName: flavor.Id,
+		insType = append(insType, cloud.InstanceType{
+			InstanceInfo: cloud.InstanceInfo{
+				Core:        cast.ToInt(flavor.Vcpus),
+				Memory:      cast.ToInt(flavor.Ram),
+				Family:      *flavor.OsExtraSpecs.Ecsperformancetype,
+				InsTypeName: flavor.Id,
+			},
+			Status:         "normal",
+			StatusCategory: "normal",
+			Value:          flavor.Id,
 		})
 	}
-	return cloud.DescribeInstanceTypesResponse{Infos: insTypeInfo}, nil
+	zoneInsType := map[string][]cloud.InstanceType{
+		zoneId: insType,
+	}
+	return cloud.DescribeAvailableResourceResponse{InstanceTypes: zoneInsType}, nil
 }
 
-//ecsInfo2CloudIns 缺少子网id,eip带宽相关信息. ListServerInterfaces可以拿到子网id
+//DescribeInstanceTypes Family字段不明确；NovaShowFlavor 华为云还没实现
+func (p *HuaweiCloud) DescribeInstanceTypes(req cloud.DescribeInstanceTypesRequest) (cloud.DescribeInstanceTypesResponse, error) {
+	return cloud.DescribeInstanceTypesResponse{}, nil
+}
+
+//缺少子网id,eip带宽相关信息. ListServerInterfaces 可以拿到子网id,ListPublicips 可以获取eip信息
 func ecsInfo2CloudIns(ecsInfos []model.ServerDetail) []cloud.Instance {
 	instances := make([]cloud.Instance, 0, len(ecsInfos))
 	for _, info := range ecsInfos {

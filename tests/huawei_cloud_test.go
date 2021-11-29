@@ -66,23 +66,25 @@ func TestShowIns(t *testing.T) {
 		return
 	}
 
+	var res interface{}
+	var resStr []byte
 	ids := []string{""}
-	res, err := client.GetInstances(ids)
+	res, err = client.GetInstances(ids)
 	if err != nil {
 		t.Log(err)
 		return
 	}
-	resStr, _ := json.Marshal(res)
+	resStr, _ = json.Marshal(res)
 	t.Log(string(resStr))
 
 	tags := []cloud.Tag{{Key: cloud.TaskId, Value: "12345"}}
-	res1, err1 := client.GetInstancesByTags("", tags)
-	if err1 != nil {
-		t.Log(err1)
+	res, err = client.GetInstancesByTags("", tags)
+	if err != nil {
+		t.Log(err)
 		return
 	}
-	resStr1, _ := json.Marshal(res1)
-	t.Log(string(resStr1))
+	resStr, _ = json.Marshal(res)
+	t.Log(string(resStr))
 }
 
 func TestCtlIns(t *testing.T) {
@@ -110,4 +112,136 @@ func TestCtlIns(t *testing.T) {
 	if err != nil {
 		t.Log(err.Error())
 	}
+}
+
+func TestGetResource(t *testing.T) {
+	client, err := getClient()
+	if err != nil {
+		t.Log(err)
+		return
+	}
+
+	var res interface{}
+	var resStr []byte
+	res, err = client.GetRegions()
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+	resStr, _ = json.Marshal(res)
+	t.Log(string(resStr))
+
+	res, err = client.GetZones(cloud.GetZonesRequest{})
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+	resStr, _ = json.Marshal(res)
+	t.Log(string(resStr))
+
+	res, err = client.DescribeAvailableResource(cloud.DescribeAvailableResourceRequest{})
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+	resStr, _ = json.Marshal(res)
+	t.Log(string(resStr))
+
+	res, err = client.DescribeInstanceTypes(cloud.DescribeInstanceTypesRequest{TypeName: []string{"1"}})
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+	resStr, _ = json.Marshal(res)
+	t.Log(string(resStr))
+
+	res, err = client.DescribeImages(cloud.DescribeImagesRequest{FlavorId: "c6s.large.2"})
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+	resStr, _ = json.Marshal(res)
+	t.Log(string(resStr))
+}
+
+func TestCreateSecGrp(t *testing.T) {
+	client, err := getClient()
+	if err != nil {
+		t.Log(err)
+		return
+	}
+
+	req := cloud.CreateSecurityGroupRequest{
+		SecurityGroupName: "test2",
+		VpcId:             "dd57a464-b590-466e-b572-8fe19fe7d67f",
+	}
+	res, err := client.CreateSecurityGroup(req)
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+	resStr, _ := json.Marshal(res)
+	t.Log(string(resStr))
+}
+
+func TestAddSecGrpRule(t *testing.T) {
+	client, err := getClient()
+	if err != nil {
+		t.Log(err)
+		return
+	}
+
+	req := cloud.AddSecurityGroupRuleRequest{
+		SecurityGroupId: "347040a4-1ace-454f-b6b3-320a76b334a4",
+		IpProtocol:      "udp",
+		PortRange:       "8894",
+		CidrIp:          "192.168.1.1/24",
+	}
+	err = client.AddIngressSecurityGroupRule(req)
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+
+	req = cloud.AddSecurityGroupRuleRequest{
+		SecurityGroupId: "347040a4-1ace-454f-b6b3-320a76b334a4",
+		IpProtocol:      "tcp",
+		PortRange:       "1000",
+		CidrIp:          "192.168.1.1/24",
+	}
+	err = client.AddEgressSecurityGroupRule(req)
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+}
+
+func TestShowSecGrp(t *testing.T) {
+	client, err := getClient()
+	if err != nil {
+		t.Log(err)
+		return
+	}
+
+	var res interface{}
+	var resStr []byte
+	res, err = client.DescribeSecurityGroups(cloud.DescribeSecurityGroupsRequest{
+		VpcId: "dd57a464-b590-466e-b572-8fe19fe7d67f",
+	})
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+	resStr, _ = json.Marshal(res)
+	t.Log(string(resStr))
+
+	res, err = client.DescribeGroupRules(cloud.DescribeGroupRulesRequest{
+		SecurityGroupId: "347040a4-1ace-454f-b6b3-320a76b334a4",
+	})
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+	resStr, _ = json.Marshal(res)
+	t.Log(string(resStr))
 }

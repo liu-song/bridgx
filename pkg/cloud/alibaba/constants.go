@@ -25,3 +25,8 @@ var _ecsStatus = map[string]string{
 	"Stopping": cloud.Stopping,
 	"Stopped":  cloud.Stopped,
 }
+
+var _secGrpRuleDirection = map[string]string{
+	"ingress": cloud.InSecGroupRule,
+	"egress":  cloud.OutSecGroupRule,
+}
