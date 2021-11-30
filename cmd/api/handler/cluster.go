@@ -56,11 +56,7 @@ func GetInstanceStat(ctx *gin.Context) {
 		response.MkResponse(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
-	instanceType, err := service.GetInstanceTypeByName(ctx, cluster.InstanceType)
-	if err != nil {
-		response.MkResponse(ctx, http.StatusInternalServerError, err.Error(), nil)
-		return
-	}
+	instanceType := service.GetInstanceTypeByName(cluster.InstanceType)
 	instanceCount, err := service.GetInstanceCount(ctx, nil, clusterName)
 	if err != nil {
 		response.MkResponse(ctx, http.StatusInternalServerError, err.Error(), nil)
@@ -225,15 +221,18 @@ func convertToClusterModel(clusterInput *types.ClusterInfo) (*model.Cluster, err
 	if clusterInput.StorageConfig == nil {
 		return nil, errors.New("missing storage config")
 	}
+	if clusterInput.ChargeConfig == nil {
+		return nil, errors.New("missing charge config")
+	}
 	nc, _ := jsoniter.MarshalToString(clusterInput.NetworkConfig)
 	sc, _ := jsoniter.MarshalToString(clusterInput.StorageConfig)
+	cc, _ := jsoniter.MarshalToString(clusterInput.ChargeConfig)
 	m := model.Cluster{
 		ClusterName:  clusterInput.Name,
 		ClusterDesc:  clusterInput.Desc,
 		RegionId:     clusterInput.RegionId,
 		ZoneId:       clusterInput.ZoneId,
 		InstanceType: clusterInput.InstanceType,
-		ChargeType:   clusterInput.ChargeType,
 		Image:        clusterInput.Image,
 		Password:     clusterInput.Password,
 		Provider:     clusterInput.Provider,
@@ -241,6 +240,7 @@ func convertToClusterModel(clusterInput *types.ClusterInfo) (*model.Cluster, err
 
 		NetworkConfig: nc,
 		StorageConfig: sc,
+		ChargeConfig:  cc,
 	}
 	return &m, nil
 }
@@ -296,7 +296,7 @@ func ExpandCluster(ctx *gin.Context) {
 	req := request.ExpandClusterRequest{}
 	err := ctx.Bind(&req)
 	if err != nil {
-		response.MkResponse(ctx, http.StatusBadRequest, response.ParamInvalid, nil)
+		response.MkResponse(ctx, http.StatusBadRequest, validation.Translate2Chinese(err), nil)
 		return
 	}
 	taskId, err := service.CreateExpandTask(ctx, req.ClusterName, req.Count, req.TaskName, user.UserId)
@@ -317,7 +317,7 @@ func ShrinkCluster(ctx *gin.Context) {
 	req := request.ShrinkClusterRequest{}
 	err := ctx.Bind(&req)
 	if err != nil {
-		response.MkResponse(ctx, http.StatusBadRequest, response.ParamInvalid, nil)
+		response.MkResponse(ctx, http.StatusBadRequest, validation.Translate2Chinese(err), nil)
 		return
 	}
 	taskId, err := service.CreateShrinkTask(ctx, req.ClusterName, req.Count, strings.Join(req.IPs, ","), req.TaskName, user.UserId)
