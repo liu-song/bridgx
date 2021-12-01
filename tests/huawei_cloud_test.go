@@ -17,7 +17,7 @@ func getClient() (*huawei.HuaweiCloud, error) {
 	return client, nil
 }
 
-func TestCreateServers(t *testing.T) {
+func TestCreateIns(t *testing.T) {
 	client, err := getClient()
 	if err != nil {
 		t.Log(err)
@@ -237,6 +237,91 @@ func TestShowSecGrp(t *testing.T) {
 
 	res, err = client.DescribeGroupRules(cloud.DescribeGroupRulesRequest{
 		SecurityGroupId: "347040a4-1ace-454f-b6b3-320a76b334a4",
+	})
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+	resStr, _ = json.Marshal(res)
+	t.Log(string(resStr))
+}
+
+func TestCreateVpc(t *testing.T) {
+	client, err := getClient()
+	if err != nil {
+		t.Log(err)
+		return
+	}
+
+	var res interface{}
+	var resStr []byte
+	vpc, err := client.CreateVPC(cloud.CreateVpcRequest{
+		VpcName:   "vpc1",
+		CidrBlock: "10.8.0.0/16",
+	})
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+	resStr, _ = json.Marshal(vpc)
+	t.Log(string(resStr))
+
+	vpcId := "cd92dd18-fe97-4852-ba71-42451e7af95d"
+	res, err = client.CreateSwitch(cloud.CreateSwitchRequest{
+		ZoneId:      "",
+		CidrBlock:   "192.168.0.0/17",
+		VSwitchName: "subnet1",
+		VpcId:       vpcId,
+		GatewayIp:   "192.168.0.1",
+	})
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+	resStr, _ = json.Marshal(res)
+	t.Log(string(resStr))
+}
+
+func TestShowVpc(t *testing.T) {
+	client, err := getClient()
+	if err != nil {
+		t.Log(err)
+		return
+	}
+
+	var res interface{}
+	var resStr []byte
+	vpcId := "28fb8ec4-f2d9-4c54-a990-0645ca8dc48c"
+	res, err = client.GetVPC(cloud.GetVpcRequest{
+		VpcId: vpcId,
+	})
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+	resStr, _ = json.Marshal(res)
+	t.Log(string(resStr))
+
+	res, err = client.DescribeVpcs(cloud.DescribeVpcsRequest{})
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+	resStr, _ = json.Marshal(res)
+	t.Log(string(resStr))
+
+	res, err = client.GetSwitch(cloud.GetSwitchRequest{
+		SwitchId: "3e3c3873-92aa-43a6-ac48-037db0eed901",
+	})
+	if err != nil {
+		t.Log(err.Error())
+		return
+	}
+	resStr, _ = json.Marshal(res)
+	t.Log(string(resStr))
+
+	res, err = client.DescribeSwitches(cloud.DescribeSwitchesRequest{
+		VpcId: vpcId,
 	})
 	if err != nil {
 		t.Log(err.Error())

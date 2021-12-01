@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/cast"
 )
 
-// BatchCreate the maximum of 'num' is 100
 func (p *HuaweiCloud) BatchCreate(m cloud.Params, num int) ([]string, error) {
 	request := &model.CreateServersRequest{}
 	listNicsServer := []model.PrePaidServerNic{

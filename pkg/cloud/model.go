@@ -106,6 +106,7 @@ type CreateSwitchRequest struct {
 	CidrBlock   string
 	VSwitchName string
 	VpcId       string
+	GatewayIp   string
 }
 type CreateSwitchResponse struct {
 	SwitchId  string

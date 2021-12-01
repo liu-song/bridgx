@@ -502,7 +502,7 @@ func publishShrinkConfig(clusterName string) error {
 
 func judgeInstancesIsReady(instances []cloud.Instance) bool {
 	for _, instance := range instances {
-		if instance.Status == cloud.Building || instance.IpInner == "" {
+		if instance.Status == cloud.EcsBuilding || instance.IpInner == "" {
 			return false
 		}
 	}

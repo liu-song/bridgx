@@ -19,14 +19,29 @@ var _payStatus = map[string]int8{
 }
 
 var _ecsStatus = map[string]string{
-	"Pending":  cloud.Building,
-	"Running":  cloud.Running,
-	"Starting": cloud.Starting,
-	"Stopping": cloud.Stopping,
-	"Stopped":  cloud.Stopped,
+	"Pending":  cloud.EcsBuilding,
+	"Running":  cloud.EcsRunning,
+	"Starting": cloud.EcsStarting,
+	"Stopping": cloud.EcsStopping,
+	"Stopped":  cloud.EcsStopped,
 }
 
 var _secGrpRuleDirection = map[string]string{
-	"ingress": cloud.InSecGroupRule,
-	"egress":  cloud.OutSecGroupRule,
+	"ingress": cloud.SecGroupRuleIn,
+	"egress":  cloud.SecGroupRuleOut,
+}
+
+var _osType = map[string]string{
+	"linux":   cloud.OsLinux,
+	"windows": cloud.OsWindows,
+}
+
+var _vpcStatus = map[string]string{
+	"Pending":   cloud.VPCStatusPending,
+	"Available": cloud.VPCStatusAvailable,
+}
+
+var _subnetStatus = map[string]string{
+	"Pending":   cloud.SubnetPending,
+	"Available": cloud.SubnetAvailable,
 }

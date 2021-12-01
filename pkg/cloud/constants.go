@@ -6,11 +6,6 @@ const (
 )
 
 const (
-	VPCStatusPending   = "Pending"
-	VPCStatusAvailable = "Available"
-)
-
-const (
 	TaskId      = "TaskId"
 	ClusterName = "ClusterName"
 )
@@ -27,16 +22,34 @@ const (
 )
 
 const (
-	Building = "Pending"
-	Running  = "Running"
-	Starting = "Starting"
-	Stopping = "Stopping"
-	Stopped  = "Stopped"
-	Abnormal = "Abnormal"
-	Deleted  = "Deleted"
+	EcsBuilding = "Pending"
+	EcsRunning  = "Running"
+	EcsStarting = "Starting"
+	EcsStopping = "Stopping"
+	EcsStopped  = "Stopped"
+	EcsAbnormal = "Abnormal"
+	EcsDeleted  = "Deleted"
 )
 
 const (
-	InSecGroupRule  = "ingress"
-	OutSecGroupRule = "egress"
+	SecGroupRuleIn  = "ingress"
+	SecGroupRuleOut = "egress"
+)
+
+const (
+	OsLinux   = "linux"
+	OsWindows = "windows"
+	OsOther   = "other"
+)
+
+const (
+	VPCStatusPending   = "Pending"
+	VPCStatusAvailable = "Available"
+	VPCStatusAbnormal  = "abnormal"
+)
+
+const (
+	SubnetPending   = "Pending"
+	SubnetAvailable = "Available"
+	SubnetAbnormal  = "abnormal"
 )

@@ -34,21 +34,39 @@ var _ecsChargeType = map[string]string{
 }
 
 var _ecsStatus = map[string]string{
-	"BUILD":         cloud.Building,
-	"REBUILD":       cloud.Building,
-	"REBOOT":        cloud.Starting,
-	"HARD_REBOOT":   cloud.Starting,
-	"RESIZE":        cloud.Starting,
-	"REVERT_RESIZE": cloud.Starting,
-	"VERIFY_RESIZE": cloud.Starting,
-	"MIGRATING":     cloud.Running,
-	"ACTIVE":        cloud.Running,
-	"SHUTOFF":       cloud.Stopped,
-	"ERROR":         cloud.Abnormal,
-	"DELETED":       cloud.Deleted,
+	"BUILD":         cloud.EcsBuilding,
+	"REBUILD":       cloud.EcsBuilding,
+	"REBOOT":        cloud.EcsStarting,
+	"HARD_REBOOT":   cloud.EcsStarting,
+	"RESIZE":        cloud.EcsStarting,
+	"REVERT_RESIZE": cloud.EcsStarting,
+	"VERIFY_RESIZE": cloud.EcsStarting,
+	"MIGRATING":     cloud.EcsRunning,
+	"ACTIVE":        cloud.EcsRunning,
+	"SHUTOFF":       cloud.EcsStopped,
+	"ERROR":         cloud.EcsAbnormal,
+	"DELETED":       cloud.EcsDeleted,
 }
 
 var _secGrpRuleDirection = map[string]string{
-	"ingress": cloud.InSecGroupRule,
-	"egress":  cloud.OutSecGroupRule,
+	"ingress": cloud.SecGroupRuleIn,
+	"egress":  cloud.SecGroupRuleOut,
+}
+
+var _osType = map[string]string{
+	"\"Linux\"\n":   cloud.OsLinux,
+	"\"Windows\"\n": cloud.OsWindows,
+	"\"Other\"\n":   cloud.OsOther,
+}
+
+var _vpcStatus = map[string]string{
+	"\"CREATING\"\n": cloud.VPCStatusPending,
+	"\"OK\"\n":       cloud.VPCStatusAvailable,
+	"\"ERROR\"\n":    cloud.VPCStatusAbnormal,
+}
+
+var _subnetStatus = map[string]string{
+	"\"UNKNOWN\"\n": cloud.SubnetPending,
+	"\"ACTIVE\"\n":  cloud.SubnetAvailable,
+	"\"ERROR\"\n":   cloud.SubnetAbnormal,
 }

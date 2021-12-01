@@ -280,7 +280,7 @@ func (p *AlibabaCloud) GetVPC(req cloud.GetVpcRequest) (cloud.GetVpcResponse, er
 				VpcId:     *response.Body.VpcId,
 				VpcName:   *response.Body.VpcName,
 				CidrBlock: *response.Body.CidrBlock,
-				Status:    *response.Body.Status,
+				Status:    _vpcStatus[*response.Body.Status],
 				SwitchIds: switchIds,
 			},
 		}
@@ -373,7 +373,7 @@ func (p *AlibabaCloud) GetSwitch(req cloud.GetSwitchRequest) (cloud.GetSwitchRes
 				Name:                    *response.Body.VSwitchName,
 				IsDefault:               isDefault,
 				AvailableIpAddressCount: int(*response.Body.AvailableIpAddressCount),
-				VStatus:                 *response.Body.Status,
+				VStatus:                 _subnetStatus[*response.Body.Status],
 				CreateAt:                *response.Body.CreationTime,
 				CidrBlock:               *response.Body.CidrBlock,
 			},
@@ -408,7 +408,7 @@ func (p *AlibabaCloud) DescribeSwitches(req cloud.DescribeSwitchesRequest) (clou
 					Name:                    *vswitch.VSwitchName,
 					IsDefault:               isDefault,
 					AvailableIpAddressCount: int(*vswitch.AvailableIpAddressCount),
-					VStatus:                 *vswitch.Status,
+					VStatus:                 _subnetStatus[*vswitch.Status],
 					CreateAt:                *vswitch.CreationTime,
 					CidrBlock:               *vswitch.CidrBlock,
 					ZoneId:                  *vswitch.ZoneId,
@@ -651,7 +651,7 @@ func (p *AlibabaCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.De
 		if response != nil && response.Body != nil && response.Body.Images != nil {
 			for _, img := range response.Body.Images.Image {
 				images = append(images, cloud.Image{
-					OsType:  *img.OSType,
+					OsType:  _osType[*img.OSType],
 					OsName:  *img.OSName,
 					ImageId: *img.ImageId,
 				})
@@ -689,11 +689,11 @@ func (p *AlibabaCloud) DescribeGroupRules(req cloud.DescribeGroupRulesRequest) (
 		for _, rule := range response.Body.Permissions.Permission {
 			var otherGroupId, cidrIp, prefixListId string
 			switch _secGrpRuleDirection[*rule.Direction] {
-			case cloud.InSecGroupRule:
+			case cloud.SecGroupRuleIn:
 				otherGroupId = *rule.SourceGroupId
 				cidrIp = *rule.SourceCidrIp
 				prefixListId = *rule.SourcePrefixListId
-			case cloud.OutSecGroupRule:
+			case cloud.SecGroupRuleOut:
 				otherGroupId = *rule.DestGroupId
 				cidrIp = *rule.DestCidrIp
 				prefixListId = *rule.DestPrefixListId

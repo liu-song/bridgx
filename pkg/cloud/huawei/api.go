@@ -14,15 +14,18 @@ import (
 	ims "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ims/v2"
 	imsModel "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ims/v2/model"
 	imsRegion "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ims/v2/region"
-	vpc "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/vpc/v3"
-	vpcRegion "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/vpc/v3/region"
+	vpc "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/vpc/v2"
+	vpcRegion "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/vpc/v2/region"
+	secGrp "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/vpc/v3"
+	secGrpRegion "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/vpc/v3/region"
 )
 
 type HuaweiCloud struct {
-	ecsClient *ecs.EcsClient
-	imsClient *ims.ImsClient
-	vpcClient *vpc.VpcClient
-	iamClient *iam.IamClient
+	ecsClient    *ecs.EcsClient
+	imsClient    *ims.ImsClient
+	secGrpClient *secGrp.VpcClient
+	vpcClient    *vpc.VpcClient
+	iamClient    *iam.IamClient
 }
 
 func New(ak, sk, regionId string) (*HuaweiCloud, error) {
@@ -41,6 +44,11 @@ func New(ak, sk, regionId string) (*HuaweiCloud, error) {
 			WithRegion(imsRegion.ValueOf(regionId)).
 			WithCredential(auth).
 			Build())
+	secGrpClt := secGrp.NewVpcClient(
+		secGrp.VpcClientBuilder().
+			WithRegion(secGrpRegion.ValueOf(regionId)).
+			WithCredential(auth).
+			Build())
 	vpcClt := vpc.NewVpcClient(
 		vpc.VpcClientBuilder().
 			WithRegion(vpcRegion.ValueOf(regionId)).
@@ -57,7 +65,7 @@ func New(ak, sk, regionId string) (*HuaweiCloud, error) {
 			WithRegion(iamRegion.ValueOf(regionId)).
 			WithCredential(gAuth).
 			Build())
-	return &HuaweiCloud{ecsClient: ecsClt, imsClient: imsClt, vpcClient: vpcClt, iamClient: iamClt}, nil
+	return &HuaweiCloud{ecsClient: ecsClt, imsClient: imsClt, secGrpClient: secGrpClt, vpcClient: vpcClt, iamClient: iamClt}, nil
 }
 
 func (HuaweiCloud) ProviderType() string {
@@ -88,6 +96,7 @@ func (p *HuaweiCloud) GetRegions() (cloud.GetRegionsResponse, error) {
 // DescribeImages osType转成字符串;返回太多了
 func (p *HuaweiCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.DescribeImagesResponse, error) {
 	pageSize := 500
+	images := make([]cloud.Image, 0, pageSize)
 	request := &imsModel.ListImagesRequest{}
 	sortDirRequest := imsModel.GetListImagesRequestSortDirEnum().DESC
 	request.SortDir = &sortDirRequest
@@ -101,7 +110,6 @@ func (p *HuaweiCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.Des
 	limitRequest := int32(pageSize)
 	request.Limit = &limitRequest
 	markerRequest := ""
-	images := make([]cloud.Image, 0, pageSize)
 	for {
 		if markerRequest != "" {
 			request.Marker = &markerRequest
@@ -115,23 +123,23 @@ func (p *HuaweiCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.Des
 		}
 
 		for _, img := range *response.Images {
-			markerRequest = img.Id
 			osType, _ := img.OsType.MarshalJSON()
 			images = append(images, cloud.Image{
 				ImageId: img.Id,
-				OsType:  string(osType),
+				OsType:  _osType[string(osType)],
 				OsName:  *img.OsVersion,
 			})
 		}
-		if len(*response.Images) < pageSize {
+		imgNum := len(*response.Images)
+		if imgNum < pageSize {
 			break
 		}
+		markerRequest = (*response.Images)[imgNum-1].Id
 	}
 	return cloud.DescribeImagesResponse{Images: images}, nil
 }
 
 func (p *HuaweiCloud) GetOrders(req cloud.GetOrdersRequest) (cloud.GetOrdersResponse, error) {
-
 	orders := make([]cloud.Order, 0, 1)
 
 	return cloud.GetOrdersResponse{Orders: orders}, nil
