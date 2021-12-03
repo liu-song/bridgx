@@ -35,6 +35,10 @@ func (p *HuaweiCloud) BatchCreate(m cloud.Params, num int) ([]string, error) {
 
 	adminPassServerPrePaidServer := m.Password
 	countServerPrePaidServer := int32(num)
+	chargeType := model.GetPrePaidServerExtendParamChargingModeEnum().POST_PAID
+	extendParam := &model.PrePaidServerExtendParam{
+		ChargingMode: &chargeType,
+	}
 	listServerTagsServer := make([]model.PrePaidServerTag, 0, len(m.Tags))
 	for _, tag := range m.Tags {
 		listServerTagsServer = append(listServerTagsServer, model.PrePaidServerTag{
@@ -54,14 +58,15 @@ func (p *HuaweiCloud) BatchCreate(m cloud.Params, num int) ([]string, error) {
 		RootVolume:  rootVolumeServer,
 		DataVolumes: &listDataVolumesServer,
 		ServerTags:  &listServerTagsServer,
+		Extendparam: extendParam,
 	}
 	if m.Network.InternetMaxBandwidthOut > 0 {
-		sizeBandwidthPrePaidServerEipBandwidth := int32(m.Network.InternetMaxBandwidthOut)
-		chargemodeBandwidthPrePaidServerEipBandwidth := m.Network.InternetChargeType
+		sizeBandwith := int32(m.Network.InternetMaxBandwidthOut)
+		chargemodeBandwidth := _bandwidthChargeMode[m.Network.InternetChargeType]
 		bandwidthEip := &model.PrePaidServerEipBandwidth{
-			Size:       &sizeBandwidthPrePaidServerEipBandwidth,
+			Size:       &sizeBandwith,
 			Sharetype:  model.GetPrePaidServerEipBandwidthSharetypeEnum().PER,
-			Chargemode: &chargemodeBandwidthPrePaidServerEipBandwidth,
+			Chargemode: &chargemodeBandwidth,
 		}
 		eipPublicip := &model.PrePaidServerEip{
 			Iptype:    m.Network.InternetIpType,
@@ -73,10 +78,10 @@ func (p *HuaweiCloud) BatchCreate(m cloud.Params, num int) ([]string, error) {
 		serverbody.Publicip = publicipServer
 	}
 	if m.Network.SecurityGroup != "" {
-		idSecurityGroupsPrePaidServerSecurityGroup := m.Network.SecurityGroup
+		idSecurityGroup := m.Network.SecurityGroup
 		var listSecurityGroupsServer = []model.PrePaidServerSecurityGroup{
 			{
-				Id: &idSecurityGroupsPrePaidServerSecurityGroup,
+				Id: &idSecurityGroup,
 			},
 		}
 		serverbody.SecurityGroups = &listSecurityGroupsServer
@@ -266,43 +271,52 @@ func (p *HuaweiCloud) GetZones(req cloud.GetZonesRequest) (cloud.GetZonesRespons
 	return cloud.GetZonesResponse{Zones: zones}, nil
 }
 
-//DescribeAvailableResource 华为云不仅返回id,还返回了机型详情；返回缺少zoneid;StatusCategory机型状态统一与必要性。相关流程可能得调整
 func (p *HuaweiCloud) DescribeAvailableResource(req cloud.DescribeAvailableResourceRequest) (cloud.DescribeAvailableResourceResponse, error) {
-	request := &model.ListFlavorsRequest{}
-	zoneId := "zoneId"
-	if req.ZoneId != "" {
-		zoneId = req.ZoneId
-		request.AvailabilityZone = &zoneId
-	}
-	response, err := p.ecsClient.ListFlavors(request)
-	if err != nil {
-		return cloud.DescribeAvailableResourceResponse{}, err
-	}
-	if response.HttpStatusCode != 200 {
-		return cloud.DescribeAvailableResourceResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+	zoneIds := make([]string, 0, 8)
+	if req.ZoneId == "" {
+		zones, err := p.GetZones(cloud.GetZonesRequest{})
+		if err != nil {
+			return cloud.DescribeAvailableResourceResponse{}, err
+		}
+		for _, zone := range zones.Zones {
+			zoneIds = append(zoneIds, zone.ZoneId)
+		}
+
+	} else {
+		zoneIds = append(zoneIds, req.ZoneId)
 	}
 
-	insType := make([]cloud.InstanceType, 0, len(*response.Flavors))
-	for _, flavor := range *response.Flavors {
-		insType = append(insType, cloud.InstanceType{
-			InstanceInfo: cloud.InstanceInfo{
-				Core:        cast.ToInt(flavor.Vcpus),
-				Memory:      cast.ToInt(flavor.Ram),
-				Family:      *flavor.OsExtraSpecs.Ecsperformancetype,
-				InsTypeName: flavor.Id,
-			},
-			Status:         "normal",
-			StatusCategory: "normal",
-			Value:          flavor.Id,
-		})
+	zoneInsType := make(map[string][]cloud.InstanceType, len(zoneIds))
+	request := &model.ListFlavorsRequest{}
+	for _, zoneId := range zoneIds {
+		request.AvailabilityZone = &zoneId
+		response, err := p.ecsClient.ListFlavors(request)
+		if err != nil {
+			return cloud.DescribeAvailableResourceResponse{}, err
+		}
+		if response.HttpStatusCode != 200 {
+			return cloud.DescribeAvailableResourceResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+		}
+
+		insType := make([]cloud.InstanceType, 0, len(*response.Flavors))
+		for _, flavor := range *response.Flavors {
+			insType = append(insType, cloud.InstanceType{
+				InstanceInfo: cloud.InstanceInfo{
+					Core:        cast.ToInt(flavor.Vcpus),
+					Memory:      cast.ToInt(flavor.Ram / 1024),
+					Family:      *flavor.OsExtraSpecs.Ecsperformancetype,
+					InsTypeName: flavor.Id,
+				},
+				Status: getFlavorStatus(flavor.OsExtraSpecs, zoneId),
+			})
+		}
+		zoneInsType[zoneId] = insType
 	}
-	zoneInsType := map[string][]cloud.InstanceType{
-		zoneId: insType,
-	}
+
 	return cloud.DescribeAvailableResourceResponse{InstanceTypes: zoneInsType}, nil
 }
 
-//DescribeInstanceTypes Family字段不明确；NovaShowFlavor 华为云还没实现
+//DescribeInstanceTypes NovaShowFlavor 华为云还没实现
 func (p *HuaweiCloud) DescribeInstanceTypes(req cloud.DescribeInstanceTypesRequest) (cloud.DescribeInstanceTypesResponse, error) {
 	return cloud.DescribeInstanceTypesResponse{}, nil
 }
@@ -342,4 +356,28 @@ func ecsInfo2CloudIns(ecsInfos []model.ServerDetail) []cloud.Instance {
 		})
 	}
 	return instances
+}
+
+func getFlavorStatus(flavor *model.FlavorExtraSpec, zoneId string) string {
+	status := *flavor.Condoperationaz
+	if status == "" {
+		return _insTypeStat[*flavor.Condoperationstatus]
+	}
+
+	staStr := status
+	for {
+		begin := strings.Index(staStr, zoneId)
+		if begin == -1 {
+			return _insTypeStat[*flavor.Condoperationstatus]
+		}
+		staStr = staStr[begin:]
+		zoneIdx := strings.Index(staStr, "(")
+		if staStr[:zoneIdx] != zoneId {
+			staStr = staStr[zoneIdx:]
+			continue
+		}
+
+		end := strings.Index(staStr, ")")
+		return _insTypeStat[staStr[zoneIdx+1:end]]
+	}
 }

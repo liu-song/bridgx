@@ -453,7 +453,7 @@ func (p *AlibabaCloud) AddIngressSecurityGroupRule(req cloud.AddSecurityGroupRul
 	request := &ecsClient.AuthorizeSecurityGroupRequest{
 		RegionId:           tea.String(req.RegionId),
 		SecurityGroupId:    tea.String(req.SecurityGroupId),
-		IpProtocol:         tea.String(req.IpProtocol),
+		IpProtocol:         tea.String(_protocol[req.IpProtocol]),
 		PortRange:          tea.String(req.PortRange),
 		SourceGroupId:      tea.String(req.GroupId),
 		SourceCidrIp:       tea.String(req.CidrIp),
@@ -590,64 +590,99 @@ func (p *AlibabaCloud) DescribeAvailableResource(req cloud.DescribeAvailableReso
 			if zone.AvailableResources == nil {
 				continue
 			}
-			resources := make([]cloud.InstanceType, 0, 100)
+			insTypeMap := make(map[string]cloud.InstanceType, 100)
+			insTypeIds := make([]string, 0, 100)
 			for _, resource := range zone.AvailableResources.AvailableResource {
 				if resource.SupportedResources == nil {
 					continue
 				}
 				for _, ins := range resource.SupportedResources.SupportedResource {
-					if ins != nil {
-						resources = append(resources, cloud.InstanceType{
-							Status:         *ins.Status,
-							StatusCategory: *ins.StatusCategory,
-							Value:          *ins.Value,
-						})
+					if ins == nil {
+						continue
 					}
+					insTypeMap[*ins.Value] = cloud.InstanceType{
+						Status: _insTypeStat[*ins.StatusCategory],
+					}
+					insTypeIds = append(insTypeIds, *ins.Value)
 				}
 			}
-			zoneInsType[*zone.ZoneId] = resources
+
+			res, err := p.DescribeInstanceTypes(cloud.DescribeInstanceTypesRequest{TypeName: insTypeIds})
+			if err != nil {
+				return cloud.DescribeAvailableResourceResponse{}, err
+			}
+			insTypeInfos := make([]cloud.InstanceType, 0, len(res.Infos))
+			for _, info := range res.Infos {
+				insTypeInfos = append(insTypeInfos, cloud.InstanceType{
+					InstanceInfo: cloud.InstanceInfo{
+						Core:        info.Core,
+						Memory:      info.Memory,
+						Family:      info.Family,
+						InsTypeName: info.InsTypeName,
+					},
+					Status: insTypeMap[info.InsTypeName].Status,
+				})
+			}
+			zoneInsType[*zone.ZoneId] = insTypeInfos
 		}
 		return cloud.DescribeAvailableResourceResponse{
 			InstanceTypes: zoneInsType,
 		}, nil
 	}
-	return cloud.DescribeAvailableResourceResponse{}, err
+	return cloud.DescribeAvailableResourceResponse{}, errors.New("response is null")
 }
 
 func (p *AlibabaCloud) DescribeInstanceTypes(req cloud.DescribeInstanceTypesRequest) (cloud.DescribeInstanceTypesResponse, error) {
-	response, err := p.ecsClient.DescribeInstanceTypes(&ecsClient.DescribeInstanceTypesRequest{
+	pageSize := 1600
+	insTypeInfo := make([]cloud.InstanceInfo, 0, pageSize)
+	request := &ecsClient.DescribeInstanceTypesRequest{
 		InstanceTypes: tea.StringSlice(req.TypeName),
-	})
-	if err != nil {
-		logs.Logger.Errorf("DescribeInstanceTypes AlibabaCloud failed.err: [%v] req[%v]", err, req)
-		return cloud.DescribeInstanceTypesResponse{}, err
+		MaxResults:    tea.Int64(int64(pageSize)),
 	}
-	if response != nil && response.Body != nil && response.Body.InstanceTypes != nil {
-		InsTypeInfo := make([]cloud.InstanceInfo, 0, len(req.TypeName))
+	nextToken := ""
+	for {
+		request.NextToken = &nextToken
+		response, err := p.ecsClient.DescribeInstanceTypes(request)
+		if err != nil {
+			logs.Logger.Errorf("DescribeInstanceTypes AlibabaCloud failed.err: [%v] req[%v]", err, req)
+			return cloud.DescribeInstanceTypesResponse{}, err
+		}
+		if response == nil || response.Body == nil || response.Body.InstanceTypes == nil {
+			return cloud.DescribeInstanceTypesResponse{}, errors.New("response is null")
+		}
+
 		for _, info := range response.Body.InstanceTypes.InstanceType {
-			InsTypeInfo = append(InsTypeInfo, cloud.InstanceInfo{
+			insTypeInfo = append(insTypeInfo, cloud.InstanceInfo{
 				Core:        int(*info.CpuCoreCount),
 				Memory:      int(*info.MemorySize),
 				Family:      *info.InstanceTypeFamily,
 				InsTypeName: *info.InstanceTypeId,
 			})
 		}
-		return cloud.DescribeInstanceTypesResponse{
-			Infos: InsTypeInfo,
-		}, nil
+
+		insTypeNum := len(response.Body.InstanceTypes.InstanceType)
+		if insTypeNum < pageSize {
+			break
+		}
+		nextToken = *response.Body.NextToken
 	}
-	return cloud.DescribeInstanceTypesResponse{}, err
+
+	return cloud.DescribeInstanceTypesResponse{Infos: insTypeInfo}, nil
 }
 
 func (p *AlibabaCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.DescribeImagesResponse, error) {
 	var page int32 = 1
 	images := make([]cloud.Image, 0)
+	request := &ecsClient.DescribeImagesRequest{
+		RegionId: tea.String(req.RegionId),
+		PageSize: tea.Int32(50),
+	}
+	if req.InsType != "" {
+		request.InstanceType = tea.String(req.InsType)
+	}
 	for {
-		response, err := p.ecsClient.DescribeImages(&ecsClient.DescribeImagesRequest{
-			RegionId:   tea.String(req.RegionId),
-			PageSize:   tea.Int32(50),
-			PageNumber: tea.Int32(page),
-		})
+		request.PageNumber = tea.Int32(page)
+		response, err := p.ecsClient.DescribeImages(request)
 		if response != nil && response.Body != nil && response.Body.Images != nil {
 			for _, img := range response.Body.Images.Image {
 				images = append(images, cloud.Image{
@@ -755,8 +790,17 @@ func (p *AlibabaCloud) GetOrders(req cloud.GetOrdersRequest) (cloud.GetOrdersRes
 
 		for _, subOrder := range detailRsp.Data.OrderList.Order {
 			orderTime, _ := time.Parse("2006-01-02T15:04:05Z", subOrder.CreateTime)
-			usageStartTime, _ := time.Parse("2006-01-02T15:04:05Z", subOrder.UsageStartTime)
-			usageEndTime, _ := time.Parse("2006-01-02T15:04:05Z", subOrder.UsageEndTime)
+			var usageStartTime, usageEndTime time.Time
+			if subOrder.UsageStartTime == "" {
+				usageStartTime = orderTime
+			} else {
+				usageStartTime, _ = time.Parse("2006-01-02T15:04:05Z", subOrder.UsageStartTime)
+			}
+			if subOrder.UsageEndTime == "" {
+				usageEndTime = orderTime
+			} else {
+				usageEndTime, _ = time.Parse("2006-01-02T15:04:05Z", subOrder.UsageEndTime)
+			}
 			if _chargeType[subOrder.SubscriptionType] == cloud.PostPaid && usageEndTime.Sub(usageStartTime).Hours() > 24*365*20 {
 				usageEndTime, _ = time.Parse("2006-01-02 15:04:05", "2038-01-01 00:00:00")
 			}

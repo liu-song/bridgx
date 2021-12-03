@@ -2,9 +2,12 @@ package huawei
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/galaxy-future/BridgX/internal/logs"
 	"github.com/galaxy-future/BridgX/pkg/cloud"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/vpc/v2/model"
+	"github.com/spf13/cast"
 )
 
 // CreateVPC 返回缺少RequestId
@@ -24,6 +27,7 @@ func (p *HuaweiCloud) CreateVPC(req cloud.CreateVpcRequest) (cloud.CreateVpcResp
 	if response.HttpStatusCode != 200 {
 		return cloud.CreateVpcResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
 	}
+
 	res := cloud.CreateVpcResponse{
 		VpcId:     response.Vpc.Id,
 		RequestId: "",
@@ -31,7 +35,6 @@ func (p *HuaweiCloud) CreateVPC(req cloud.CreateVpcRequest) (cloud.CreateVpcResp
 	return res, nil
 }
 
-// GetVPC miss SwitchIds
 func (p *HuaweiCloud) GetVPC(req cloud.GetVpcRequest) (cloud.GetVpcResponse, error) {
 	request := &model.ShowVpcRequest{
 		VpcId: req.VpcId,
@@ -44,12 +47,24 @@ func (p *HuaweiCloud) GetVPC(req cloud.GetVpcRequest) (cloud.GetVpcResponse, err
 		return cloud.GetVpcResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
 	}
 
-	vpc := vpcInfo2CloudVpc([]model.Vpc{*response.Vpc}, req.RegionId)
+	switchs, err := p.DescribeSwitches(cloud.DescribeSwitchesRequest{
+		VpcId: req.VpcId,
+	})
+	if err != nil {
+		return cloud.GetVpcResponse{}, err
+	}
+	swIds := make([]string, 0, len(switchs.Switches))
+	for _, row := range switchs.Switches {
+		swIds = append(swIds, row.SwitchId)
+	}
+
+	vpc := vpcInfo2CloudVpc([]model.Vpc{*response.Vpc}, map[string][]string{req.VpcId: swIds}, req.RegionId)
 	return cloud.GetVpcResponse{Vpc: vpc[0]}, nil
 }
 
 func (p *HuaweiCloud) DescribeVpcs(req cloud.DescribeVpcsRequest) (cloud.DescribeVpcsResponse, error) {
 	vpcs := make([]model.Vpc, 0, 16)
+	swIdMap := make(map[string][]string, 16)
 	request := &model.ListVpcsRequest{}
 	limitRequest := int32(_pageSize)
 	request.Limit = &limitRequest
@@ -67,6 +82,20 @@ func (p *HuaweiCloud) DescribeVpcs(req cloud.DescribeVpcsRequest) (cloud.Describ
 		}
 
 		vpcs = append(vpcs, *response.Vpcs...)
+		for _, vpc := range *response.Vpcs {
+			switchs, err := p.DescribeSwitches(cloud.DescribeSwitchesRequest{
+				VpcId: vpc.Id,
+			})
+			if err != nil {
+				logs.Logger.Errorf("%s, DescribeSwitches failed %s", vpc.Id, err.Error())
+				continue
+			}
+			swIds := make([]string, 0, len(switchs.Switches))
+			for _, row := range switchs.Switches {
+				swIds = append(swIds, row.SwitchId)
+			}
+			swIdMap[vpc.Id] = swIds
+		}
 		vpcNum := len(*response.Vpcs)
 		if vpcNum < _pageSize {
 			break
@@ -74,7 +103,7 @@ func (p *HuaweiCloud) DescribeVpcs(req cloud.DescribeVpcsRequest) (cloud.Describ
 		markerRequest = (*response.Vpcs)[vpcNum-1].Id
 	}
 
-	return cloud.DescribeVpcsResponse{Vpcs: vpcInfo2CloudVpc(vpcs, req.RegionId)}, nil
+	return cloud.DescribeVpcsResponse{Vpcs: vpcInfo2CloudVpc(vpcs, swIdMap, req.RegionId)}, nil
 }
 
 // CreateSwitch add GatewayIp,miss RequestId
@@ -115,12 +144,17 @@ func (p *HuaweiCloud) GetSwitch(req cloud.GetSwitchRequest) (cloud.GetSwitchResp
 		return cloud.GetSwitchResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
 	}
 
-	s := subnetInfo2CloudSwitch([]model.Subnet{*response.Subnet})
+	usedIpNum, err := p.getUsedIpNum([]string{req.SwitchId})
+	if err != nil {
+		return cloud.GetSwitchResponse{}, err
+	}
+	s := subnetInfo2CloudSwitch([]model.Subnet{*response.Subnet}, usedIpNum)
 	return cloud.GetSwitchResponse{Switch: s[0]}, nil
 }
 
 func (p *HuaweiCloud) DescribeSwitches(req cloud.DescribeSwitchesRequest) (cloud.DescribeSwitchesResponse, error) {
 	subnets := make([]model.Subnet, 0, _pageSize)
+	swIds := make([]string, 0, _pageSize)
 	request := &model.ListSubnetsRequest{}
 	limitRequest := int32(_pageSize)
 	request.Limit = &limitRequest
@@ -140,6 +174,9 @@ func (p *HuaweiCloud) DescribeSwitches(req cloud.DescribeSwitchesRequest) (cloud
 		}
 
 		subnets = append(subnets, *response.Subnets...)
+		for _, subnet := range *response.Subnets {
+			swIds = append(swIds, subnet.Id)
+		}
 		netNum := len(*response.Subnets)
 		if netNum < _pageSize {
 			break
@@ -147,11 +184,15 @@ func (p *HuaweiCloud) DescribeSwitches(req cloud.DescribeSwitchesRequest) (cloud
 		markerRequest = (*response.Subnets)[netNum-1].Id
 	}
 
-	return cloud.DescribeSwitchesResponse{Switches: subnetInfo2CloudSwitch(subnets)}, nil
+	usedIpNum, err := p.getUsedIpNum(swIds)
+	if err != nil {
+		return cloud.DescribeSwitchesResponse{}, err
+	}
+	return cloud.DescribeSwitchesResponse{Switches: subnetInfo2CloudSwitch(subnets, usedIpNum)}, nil
 }
 
-//miss SwitchIds,CreateAt
-func vpcInfo2CloudVpc(vpcInfo []model.Vpc, regionId string) []cloud.VPC {
+//miss CreateAt
+func vpcInfo2CloudVpc(vpcInfo []model.Vpc, swIdMap map[string][]string, regionId string) []cloud.VPC {
 	vpcs := make([]cloud.VPC, 0, len(vpcInfo))
 	for _, vpc := range vpcInfo {
 		stat, _ := vpc.Status.MarshalJSON()
@@ -159,6 +200,7 @@ func vpcInfo2CloudVpc(vpcInfo []model.Vpc, regionId string) []cloud.VPC {
 			VpcId:     vpc.Id,
 			VpcName:   vpc.Name,
 			CidrBlock: vpc.Cidr,
+			SwitchIds: swIdMap[vpc.Id],
 			RegionId:  regionId,
 			Status:    _vpcStatus[string(stat)],
 		})
@@ -166,19 +208,55 @@ func vpcInfo2CloudVpc(vpcInfo []model.Vpc, regionId string) []cloud.VPC {
 	return vpcs
 }
 
-//miss IsDefault,AvailableIpAddressCount,CreateAt
-func subnetInfo2CloudSwitch(subnetInfo []model.Subnet) []cloud.Switch {
+//miss IsDefault,CreateAt
+func subnetInfo2CloudSwitch(subnetInfo []model.Subnet, UsedIpNum map[string]int) []cloud.Switch {
 	switchs := make([]cloud.Switch, 0, len(subnetInfo))
 	for _, subnet := range subnetInfo {
 		stat, _ := subnet.Status.MarshalJSON()
+		totalIpNum := getSubnetTotalIpNum(subnet.Cidr)
+
 		switchs = append(switchs, cloud.Switch{
-			VpcId:     subnet.VpcId,
-			SwitchId:  subnet.Id,
-			Name:      subnet.Name,
-			VStatus:   _subnetStatus[string(stat)],
-			ZoneId:    subnet.AvailabilityZone,
-			CidrBlock: subnet.Cidr,
+			VpcId:                   subnet.VpcId,
+			SwitchId:                subnet.Id,
+			Name:                    subnet.Name,
+			AvailableIpAddressCount: totalIpNum - 3 - UsedIpNum[subnet.Id],
+			VStatus:                 _subnetStatus[string(stat)],
+			ZoneId:                  subnet.AvailabilityZone,
+			CidrBlock:               subnet.Cidr,
 		})
 	}
 	return switchs
+}
+
+func (p *HuaweiCloud) getUsedIpNum(switchIds []string) (map[string]int, error) {
+	resMap := make(map[string]int, len(switchIds))
+	request := &model.ListPrivateipsRequest{}
+	for _, switchId := range switchIds {
+		request.SubnetId = switchId
+		response, err := p.vpcClient.ListPrivateips(request)
+		if err != nil {
+			return nil, err
+		}
+		if response.HttpStatusCode != 200 {
+			logs.Logger.Errorf("%s, httpcode %d, %v", switchId, response.HttpStatusCode, response)
+			continue
+		}
+
+		resMap[switchId] = len(*response.Privateips)
+	}
+
+	return resMap, nil
+}
+
+func getSubnetTotalIpNum(cidr string) int {
+	index := strings.Index(cidr, "/")
+	if index < 0 {
+		return 0
+	}
+	num := cast.ToInt(cidr[index+1:])
+	if num < 1 || num > 31 {
+		return 0
+	}
+
+	return 1 << (32 - num)
 }

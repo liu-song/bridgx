@@ -13,7 +13,6 @@ import (
 	"github.com/galaxy-future/BridgX/internal/model"
 	"github.com/galaxy-future/BridgX/internal/types"
 	"github.com/galaxy-future/BridgX/pkg/cloud"
-	"golang.org/x/sync/errgroup"
 )
 
 const instanceTypeTmpl = "%d核%dG(%s)"
@@ -203,29 +202,12 @@ func SyncInstanceTypes(ctx context.Context, provider string) error {
 	}
 	ak := getFirstAk(accounts, provider)
 
-	var eg errgroup.Group
-	var instanceTypes []model.InstanceType
-	instanceInfoMap := make(map[string]*cloud.InstanceInfo)
-	eg.Go(func() error {
-		instanceTypes, _ = getAvailableResource(regions, provider, ak)
-		return nil
-	})
-	eg.Go(func() error {
-		instanceInfoMap, err = getInstanceTypeFromCloud(provider, ak)
-		return err
-	})
-	if err := eg.Wait(); err != nil {
+	instanceTypes, err := getAvailableResource(regions, provider, ak)
+	if err != nil {
 		return err
 	}
 	inss := make([]model.InstanceType, 0, 100)
 	for _, insType := range instanceTypes {
-		insInfo := instanceInfoMap[insType.TypeName]
-		if insInfo == nil {
-			continue
-		}
-		insType.Family = insInfo.Family
-		insType.Memory = insInfo.Memory
-		insType.Core = insInfo.Core
 		now := time.Now()
 		insType.CreateAt = &now
 		insType.UpdateAt = &now
@@ -244,7 +226,7 @@ func SyncInstanceTypes(ctx context.Context, provider string) error {
 			logs.Logger.Errorf("inss[%v] BatchCreateInstanceType failed,err: %v", inss, err)
 		}
 	}
-	return exchangeStatus(ctx)
+	return exchangeStatus(ctx, provider)
 }
 
 func getAvailableResource(regions []cloud.Region, provider, ak string) ([]model.InstanceType, error) {
@@ -267,30 +249,15 @@ func getAvailableResource(regions []cloud.Region, provider, ak string) ([]model.
 					Provider: provider,
 					RegionId: region.RegionId,
 					ZoneId:   zone,
-					TypeName: in.Value,
+					TypeName: in.InsTypeName,
+					Family:   in.Family,
+					Core:     in.Core,
+					Memory:   in.Memory,
 				})
 			}
 		}
-
 	}
 	return instanceTypes, nil
-}
-
-func getInstanceTypeFromCloud(provider, ak string) (map[string]*cloud.InstanceInfo, error) {
-	instanceInfoMap := make(map[string]*cloud.InstanceInfo)
-	p, err := getProvider(provider, ak, DefaultRegion)
-	if err != nil {
-		logs.Logger.Errorf("region[%s] getProvider failed,err: %v", DefaultRegion, err)
-		return instanceInfoMap, err
-	}
-	res, err := p.DescribeInstanceTypes(cloud.DescribeInstanceTypesRequest{})
-	if err != nil {
-		return instanceInfoMap, err
-	}
-	for _, instanceType := range res.Infos {
-		instanceInfoMap[instanceType.InsTypeName] = &instanceType
-	}
-	return instanceInfoMap, nil
 }
 
 type ListInstanceTypeRequest struct {
@@ -373,14 +340,14 @@ func SyncInstanceExpireTime(ctx context.Context, clusterName string) error {
 	return nil
 }
 
-func exchangeStatus(ctx context.Context) error {
+func exchangeStatus(ctx context.Context, provider string) error {
 	tx := clients.WriteDBCli.Begin()
-	err := model.UpdateInstanceTypeIStatus(ctx, tx, model.InstanceTypeStatusExpired)
+	err := model.UpdateInstanceTypeIStatus(ctx, tx, provider, model.InstanceTypeStatusExpired)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
-	err = model.UpdateInstanceTypeIStatus(ctx, tx, model.InstanceTypeStatusActivated)
+	err = model.UpdateInstanceTypeIStatus(ctx, tx, provider, model.InstanceTypeStatusActivated)
 	if err != nil {
 		tx.Rollback()
 		return err

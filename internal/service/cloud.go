@@ -233,6 +233,9 @@ func getAlibabaCloudClient(ak, region string) (cloud.Provider, error) {
 		return nil, errors.New("no sk found")
 	}
 	client, err := alibaba.New(ak, sk, region)
+	if err != nil {
+		return nil, err
+	}
 	clientMap.Store(key, client)
 	return client, err
 }
@@ -251,6 +254,9 @@ func getHuaweiCloudClient(ak, region string) (cloud.Provider, error) {
 		return nil, errors.New("no sk found")
 	}
 	client, err := huawei.New(ak, sk, region)
+	if err != nil {
+		return nil, err
+	}
 	huaweiCliMap.Store(key, client)
 	return client, err
 }

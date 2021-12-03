@@ -3,6 +3,7 @@ package huawei
 import (
 	"fmt"
 
+	"github.com/galaxy-future/BridgX/internal/logs"
 	"github.com/galaxy-future/BridgX/pkg/cloud"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/auth/basic"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/auth/global"
@@ -28,7 +29,13 @@ type HuaweiCloud struct {
 	iamClient    *iam.IamClient
 }
 
-func New(ak, sk, regionId string) (*HuaweiCloud, error) {
+func New(ak, sk, regionId string) (h *HuaweiCloud, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			logs.Logger.Errorf("new failed %s,%s,%v", ak, regionId, e)
+			err = fmt.Errorf("%v", e)
+		}
+	}()
 	auth := basic.NewCredentialsBuilder().
 		WithAk(ak).
 		WithSk(sk).
@@ -93,19 +100,22 @@ func (p *HuaweiCloud) GetRegions() (cloud.GetRegionsResponse, error) {
 	return cloud.GetRegionsResponse{Regions: regions}, nil
 }
 
-// DescribeImages osType转成字符串;返回太多了
 func (p *HuaweiCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.DescribeImagesResponse, error) {
 	pageSize := 500
 	images := make([]cloud.Image, 0, pageSize)
 	request := &imsModel.ListImagesRequest{}
+	imageType := imsModel.GetListImagesRequestImagetypeEnum().GOLD
+	request.Imagetype = &imageType
+	isProtected := true
+	request.Protected = &isProtected
 	sortDirRequest := imsModel.GetListImagesRequestSortDirEnum().DESC
 	request.SortDir = &sortDirRequest
 	sortKeyRequest := imsModel.GetListImagesRequestSortKeyEnum().NAME
 	request.SortKey = &sortKeyRequest
 	statusRequest := imsModel.GetListImagesRequestStatusEnum().ACTIVE
 	request.Status = &statusRequest
-	if req.FlavorId != "" {
-		request.FlavorId = &req.FlavorId
+	if req.InsType != "" {
+		request.FlavorId = &req.InsType
 	}
 	limitRequest := int32(pageSize)
 	request.Limit = &limitRequest
@@ -127,9 +137,10 @@ func (p *HuaweiCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.Des
 			images = append(images, cloud.Image{
 				ImageId: img.Id,
 				OsType:  _osType[string(osType)],
-				OsName:  *img.OsVersion,
+				OsName:  img.Name,
 			})
 		}
+
 		imgNum := len(*response.Images)
 		if imgNum < pageSize {
 			break

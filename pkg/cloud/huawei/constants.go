@@ -10,6 +10,7 @@ const (
 	_pageSize              = 1000
 )
 
+//in
 var _rootDiskCategory = map[string]model.PrePaidServerRootVolumeVolumetype{
 	"SATA":  model.GetPrePaidServerRootVolumeVolumetypeEnum().SATA,
 	"SAS":   model.GetPrePaidServerRootVolumeVolumetypeEnum().SAS,
@@ -28,6 +29,20 @@ var _dataDiskCategory = map[string]model.PrePaidServerDataVolumeVolumetype{
 	"UH_L1": model.GetPrePaidServerDataVolumeVolumetypeEnum().UH_L1,
 }
 
+var _bandwidthChargeMode = map[string]string{
+	cloud.BandwidthPayByTraffic: "traffic",
+	cloud.BandwidthPayByFix:     "",
+}
+
+var _protocol = map[string]string{
+	cloud.ProtocolIcmp:   "icmp",
+	cloud.ProtocolIcmpV6: "icmpv6",
+	cloud.ProtocolTcp:    "tcp",
+	cloud.ProtocolUdp:    "udp",
+	cloud.ProtocolAll:    "",
+}
+
+//out
 var _ecsChargeType = map[string]string{
 	"0": cloud.PostPaid,
 	"1": cloud.PrePaid,
@@ -46,6 +61,15 @@ var _ecsStatus = map[string]string{
 	"SHUTOFF":       cloud.EcsStopped,
 	"ERROR":         cloud.EcsAbnormal,
 	"DELETED":       cloud.EcsDeleted,
+}
+
+var _insTypeStat = map[string]string{
+	"normal":    cloud.InsTypeAvailable,
+	"promotion": cloud.InsTypeAvailable,
+	"":          cloud.InsTypeAvailable,
+	"obt":       cloud.InsTypeAvaSoon,
+	"abandon":   cloud.InsTypeSellOut,
+	"sellout":   cloud.InsTypeSellOut,
 }
 
 var _secGrpRuleDirection = map[string]string{

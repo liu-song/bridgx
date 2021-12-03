@@ -3,6 +3,7 @@ package huawei
 import (
 	"fmt"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/galaxy-future/BridgX/pkg/cloud"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/vpc/v3/model"
 )
@@ -113,7 +114,7 @@ func (p *HuaweiCloud) addSecGrpRule(req cloud.AddSecurityGroupRuleRequest, direc
 		Direction:       direction,
 	}
 	if req.IpProtocol != "" {
-		secGrpRuleOpt.Protocol = &req.IpProtocol
+		secGrpRuleOpt.Protocol = tea.String(_protocol[req.IpProtocol])
 	}
 	if req.PortRange != "" {
 		secGrpRuleOpt.Multiport = &req.PortRange
@@ -127,10 +128,10 @@ func (p *HuaweiCloud) addSecGrpRule(req cloud.AddSecurityGroupRuleRequest, direc
 	if req.PrefixListId != "" {
 		secGrpRuleOpt.RemoteAddressGroupId = &req.PrefixListId
 	}
-
 	request.Body = &model.CreateSecurityGroupRuleRequestBody{
 		SecurityGroupRule: secGrpRuleOpt,
 	}
+
 	response, err := p.secGrpClient.CreateSecurityGroupRule(request)
 	if err != nil {
 		return err

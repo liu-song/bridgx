@@ -9,8 +9,8 @@ import (
 	"github.com/galaxy-future/BridgX/pkg/cloud/huawei"
 )
 
-func getClient() (*huawei.HuaweiCloud, error) {
-	client, err := huawei.New("ak", "sk", "region")
+func getHuaweiClient() (*huawei.HuaweiCloud, error) {
+	client, err := huawei.New("ak", "sk", "cn-north-4")
 	if err != nil {
 		return nil, err
 	}
@@ -18,7 +18,7 @@ func getClient() (*huawei.HuaweiCloud, error) {
 }
 
 func TestCreateIns(t *testing.T) {
-	client, err := getClient()
+	client, err := getHuaweiClient()
 	if err != nil {
 		t.Log(err)
 		return
@@ -60,7 +60,7 @@ func TestCreateIns(t *testing.T) {
 }
 
 func TestShowIns(t *testing.T) {
-	client, err := getClient()
+	client, err := getHuaweiClient()
 	if err != nil {
 		t.Log(err)
 		return
@@ -88,7 +88,7 @@ func TestShowIns(t *testing.T) {
 }
 
 func TestCtlIns(t *testing.T) {
-	client, err := getClient()
+	client, err := getHuaweiClient()
 	if err != nil {
 		t.Log(err)
 		return
@@ -100,14 +100,14 @@ func TestCtlIns(t *testing.T) {
 	if err != nil {
 		t.Log(err.Error())
 	}
-	time.Sleep(time.Duration(60) * time.Second)
 
+	time.Sleep(time.Duration(60) * time.Second)
 	err = client.StartInstances(ids)
 	if err != nil {
 		t.Log(err.Error())
 	}
-	time.Sleep(time.Duration(60) * time.Second)
 
+	time.Sleep(time.Duration(60) * time.Second)
 	err = client.BatchDelete(ids, "")
 	if err != nil {
 		t.Log(err.Error())
@@ -115,7 +115,7 @@ func TestCtlIns(t *testing.T) {
 }
 
 func TestGetResource(t *testing.T) {
-	client, err := getClient()
+	client, err := getHuaweiClient()
 	if err != nil {
 		t.Log(err)
 		return
@@ -155,7 +155,7 @@ func TestGetResource(t *testing.T) {
 	resStr, _ = json.Marshal(res)
 	t.Log(string(resStr))
 
-	res, err = client.DescribeImages(cloud.DescribeImagesRequest{FlavorId: "c6s.large.2"})
+	res, err = client.DescribeImages(cloud.DescribeImagesRequest{InsType: "c6s.large.2"})
 	if err != nil {
 		t.Log(err.Error())
 		return
@@ -165,7 +165,7 @@ func TestGetResource(t *testing.T) {
 }
 
 func TestCreateSecGrp(t *testing.T) {
-	client, err := getClient()
+	client, err := getHuaweiClient()
 	if err != nil {
 		t.Log(err)
 		return
@@ -185,7 +185,7 @@ func TestCreateSecGrp(t *testing.T) {
 }
 
 func TestAddSecGrpRule(t *testing.T) {
-	client, err := getClient()
+	client, err := getHuaweiClient()
 	if err != nil {
 		t.Log(err)
 		return
@@ -217,7 +217,7 @@ func TestAddSecGrpRule(t *testing.T) {
 }
 
 func TestShowSecGrp(t *testing.T) {
-	client, err := getClient()
+	client, err := getHuaweiClient()
 	if err != nil {
 		t.Log(err)
 		return
@@ -247,13 +247,12 @@ func TestShowSecGrp(t *testing.T) {
 }
 
 func TestCreateVpc(t *testing.T) {
-	client, err := getClient()
+	client, err := getHuaweiClient()
 	if err != nil {
 		t.Log(err)
 		return
 	}
 
-	var res interface{}
 	var resStr []byte
 	vpc, err := client.CreateVPC(cloud.CreateVpcRequest{
 		VpcName:   "vpc1",
@@ -265,14 +264,25 @@ func TestCreateVpc(t *testing.T) {
 	}
 	resStr, _ = json.Marshal(vpc)
 	t.Log(string(resStr))
+}
 
-	vpcId := "cd92dd18-fe97-4852-ba71-42451e7af95d"
+func TestCreateSubnet(t *testing.T) {
+	client, err := getHuaweiClient()
+	if err != nil {
+		t.Log(err)
+		return
+	}
+
+	var res interface{}
+	var resStr []byte
+
+	vpcId := "5ab358bd-c4d4-4be6-b71c-13c2ea3f7251"
 	res, err = client.CreateSwitch(cloud.CreateSwitchRequest{
 		ZoneId:      "",
-		CidrBlock:   "192.168.0.0/17",
+		CidrBlock:   "10.8.0.0/18",
 		VSwitchName: "subnet1",
 		VpcId:       vpcId,
-		GatewayIp:   "192.168.0.1",
+		GatewayIp:   "10.8.63.254",
 	})
 	if err != nil {
 		t.Log(err.Error())
@@ -283,7 +293,7 @@ func TestCreateVpc(t *testing.T) {
 }
 
 func TestShowVpc(t *testing.T) {
-	client, err := getClient()
+	client, err := getHuaweiClient()
 	if err != nil {
 		t.Log(err)
 		return
@@ -291,7 +301,8 @@ func TestShowVpc(t *testing.T) {
 
 	var res interface{}
 	var resStr []byte
-	vpcId := "28fb8ec4-f2d9-4c54-a990-0645ca8dc48c"
+	vpcId := "dd57a464-b590-466e-b572-8fe19fe7d67f"
+	swId := "3719e837-9897-43bc-819a-d1c9e60ab72f"
 	res, err = client.GetVPC(cloud.GetVpcRequest{
 		VpcId: vpcId,
 	})
@@ -311,7 +322,7 @@ func TestShowVpc(t *testing.T) {
 	t.Log(string(resStr))
 
 	res, err = client.GetSwitch(cloud.GetSwitchRequest{
-		SwitchId: "3e3c3873-92aa-43a6-ac48-037db0eed901",
+		SwitchId: swId,
 	})
 	if err != nil {
 		t.Log(err.Error())

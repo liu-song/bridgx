@@ -28,7 +28,8 @@ const (
 	TargetTypeAccount
 	TargetTypeInstanceType
 
-	DefaultRegion = "cn-qingdao"
+	DefaultRegion       = "cn-qingdao"
+	DefaultRegionHuaWei = "cn-north-4"
 )
 
 var H *SimpleTaskHandler
@@ -101,7 +102,7 @@ func (s *SimpleTaskHandler) run() {
 				s.lock.Unlock()
 			case t = <-s.Tasks:
 			}
-			if t != nil && (t.VpcId != "" || t.AccountKey != "" && t.TargetType == TargetTypeAccount) {
+			if t != nil {
 				s.taskHandle(t)
 			}
 		}
@@ -155,6 +156,7 @@ func refreshAccount(t *SimpleTask) error {
 	if err != nil {
 		return err
 	}
+
 	vpcs := updateOrCreateVpcs(ctx, regions, t)
 	updateOrCreateSwitch(ctx, vpcs, t)
 	groups := updateOrCreateSecurityGroups(ctx, vpcs, t)
@@ -345,25 +347,32 @@ func cloud2ModelRules(rules []cloud.SecurityGroupRule) []model.SecurityGroupRule
 }
 
 func refreshVpc(t *SimpleTask) error {
+	if t.VpcId == "" {
+		return nil
+	}
+
 	res, err := t.Provider.GetVPC(cloud.GetVpcRequest{
 		VpcId:    t.VpcId,
 		RegionId: t.RegionId,
 		VpcName:  t.VpcName,
 	})
 	if err != nil {
-		logs.Logger.Errorf("refreshVpc failed.task: [%v]", t)
-		return nil
+		return err
 	}
 	vpc := res.Vpc
 	return model.UpdateVpc(context.Background(), vpc.VpcId, vpc.CidrBlock, vpc.Status, vpc.SwitchIds)
 }
 
 func refreshSwitch(t *SimpleTask) error {
+	if t.SwitchId == "" {
+		return nil
+	}
+
 	res, err := t.Provider.GetSwitch(cloud.GetSwitchRequest{
 		SwitchId: t.SwitchId,
 	})
 	if err != nil {
-		return nil
+		return err
 	}
 	vswitch := res.Switch
 	return model.UpdateSwitch(context.Background(),
@@ -626,6 +635,7 @@ type CreateSwitchRequest struct {
 	ZoneId     string
 	VpcId      string
 	CidrBlock  string
+	GatewayIp  string
 }
 
 func CreateSwitch(ctx context.Context, req CreateSwitchRequest) (switchId string, err error) {
@@ -664,8 +674,10 @@ func CreateSwitch(ctx context.Context, req CreateSwitchRequest) (switchId string
 		CidrBlock:   req.CidrBlock,
 		VSwitchName: req.SwitchName,
 		VpcId:       vpcId,
+		GatewayIp:   req.GatewayIp,
 	})
 	if err != nil {
+		logs.Logger.Error(err.Error())
 		return "", errs.ErrCreateSwitchFailed
 	}
 
@@ -688,6 +700,7 @@ func CreateSwitch(ctx context.Context, req CreateSwitchRequest) (switchId string
 	}
 	H.SubmitTask(&SimpleTask{
 		VpcId:      req.VpcId,
+		SwitchId:   res.SwitchId,
 		RegionId:   vpc.RegionId,
 		Provider:   p,
 		TargetType: TargetTypeSwitch,
@@ -1007,7 +1020,8 @@ type GetRegionsRequest struct {
 
 func GetRegions(ctx context.Context, req GetRegionsRequest) ([]cloud.Region, error) {
 	ak := getFirstAk(req.Account, req.Provider)
-	p, err := getProvider(req.Provider, ak, DefaultRegion)
+	regionId := getDefaultRegion(req.Provider)
+	p, err := getProvider(req.Provider, ak, regionId)
 	if err != nil {
 		return nil, err
 	}
@@ -1046,4 +1060,15 @@ func getFirstAk(account *types.OrgKeys, provider string) string {
 		}
 	}
 	return ""
+}
+
+func getDefaultRegion(provider string) string {
+	regionId := ""
+	switch provider {
+	case cloud.AlibabaCloud:
+		regionId = DefaultRegion
+	case cloud.HuaweiCloud:
+		regionId = DefaultRegionHuaWei
+	}
+	return regionId
 }
