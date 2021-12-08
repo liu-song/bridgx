@@ -30,10 +30,6 @@ func CreateCluster(cluster *model.Cluster, username string) error {
 	return model.Create(cluster)
 }
 
-func CreateClusterTags(tags *[]model.ClusterTag) error {
-	return model.Create(tags)
-}
-
 func EditCluster(cluster *model.Cluster, username string) error {
 	clusterInDB, err := model.GetByClusterName(cluster.ClusterName)
 	if err != nil {
@@ -195,22 +191,25 @@ func ConvertToClusterInfo(m *model.Cluster, tags []model.ClusterTag) (*types.Clu
 	for _, clusterTag := range tags {
 		mt[clusterTag.TagKey] = clusterTag.TagValue
 	}
+	instanceType := GetInstanceTypeByName(m.InstanceType)
 	clusterInfo := &types.ClusterInfo{
-		Id:            m.Id,
-		Name:          m.ClusterName,
-		Desc:          m.ClusterDesc,
-		RegionId:      m.RegionId,
-		ZoneId:        m.ZoneId,
-		InstanceType:  m.InstanceType,
-		Image:         m.Image,
-		Provider:      m.Provider,
-		Username:      constants.DefaultUsername,
-		Password:      m.Password,
-		NetworkConfig: networkConfig,
-		StorageConfig: storageConfig,
-		ChargeConfig:  chargeConfig,
-		AccountKey:    m.AccountKey,
-		Tags:          mt,
+		Id:             m.Id,
+		Name:           m.ClusterName,
+		Desc:           m.ClusterDesc,
+		RegionId:       m.RegionId,
+		ZoneId:         m.ZoneId,
+		InstanceType:   m.InstanceType,
+		Image:          m.Image,
+		Provider:       m.Provider,
+		Username:       constants.DefaultUsername,
+		Password:       m.Password,
+		AccountKey:     m.AccountKey,
+		NetworkConfig:  networkConfig,
+		StorageConfig:  storageConfig,
+		ChargeConfig:   chargeConfig,
+		Tags:           mt,
+		InstanceCore:   instanceType.Core,
+		InstanceMemory: instanceType.Memory,
 	}
 	return clusterInfo, nil
 }
@@ -298,6 +297,14 @@ func ShrinkCluster(c *types.ClusterInfo, num int, taskId int64) (err error) {
 	}
 	_ = publishShrinkConfig(c.Name)
 	return err
+}
+
+func CreateShrinkAllTask(ctx context.Context, clusterName, taskName string, uid int64) (int64, error) {
+	count, err := model.CountActiveInstancesByClusterName(ctx, []string{clusterName})
+	if err != nil {
+		return 0, err
+	}
+	return CreateShrinkTask(ctx, clusterName, int(count), "", taskName, uid)
 }
 
 //CleanClusterUnusedInstances 清除由于系统异常导致的云厂商中残留的机器
