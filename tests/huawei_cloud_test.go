@@ -1,12 +1,12 @@
 package tests
 
 import (
-	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/galaxy-future/BridgX/pkg/cloud"
 	"github.com/galaxy-future/BridgX/pkg/cloud/huawei"
+	jsoniter "github.com/json-iterator/go"
 )
 
 func getHuaweiClient() (*huawei.HuaweiCloud, error) {
@@ -26,10 +26,10 @@ func TestCreateIns(t *testing.T) {
 
 	param := cloud.Params{
 		InstanceType: "c6s.large.2",
-		ImageId:      "75e56468-4f96-4e87-927e-35081d13fd79",
+		ImageId:      "",
 		Network: &cloud.Network{
-			VpcId:                   "dd57a464-b590-466e-b572-8fe19fe7d67f",
-			SubnetId:                "3719e837-9897-43bc-819a-d1c9e60ab72f",
+			VpcId:                   "",
+			SubnetId:                "",
 			SecurityGroup:           "",
 			InternetChargeType:      "traffic",
 			InternetMaxBandwidthOut: 0,
@@ -39,7 +39,7 @@ func TestCreateIns(t *testing.T) {
 			SystemDisk: cloud.DiskConf{Size: 40, Category: "SSD"},
 			DataDisk:   []cloud.DiskConf{},
 		},
-		Password: "ASDqwe123",
+		Password: "xxx",
 		Tags: []cloud.Tag{
 			{
 				Key:   cloud.TaskId,
@@ -74,7 +74,7 @@ func TestShowIns(t *testing.T) {
 		t.Log(err)
 		return
 	}
-	resStr, _ = json.Marshal(res)
+	resStr, _ = jsoniter.Marshal(res)
 	t.Log(string(resStr))
 
 	tags := []cloud.Tag{{Key: cloud.TaskId, Value: "12345"}}
@@ -83,7 +83,7 @@ func TestShowIns(t *testing.T) {
 		t.Log(err)
 		return
 	}
-	resStr, _ = json.Marshal(res)
+	resStr, _ = jsoniter.Marshal(res)
 	t.Log(string(resStr))
 }
 
@@ -128,7 +128,7 @@ func TestGetResource(t *testing.T) {
 		t.Log(err.Error())
 		return
 	}
-	resStr, _ = json.Marshal(res)
+	resStr, _ = jsoniter.Marshal(res)
 	t.Log(string(resStr))
 
 	res, err = client.GetZones(cloud.GetZonesRequest{})
@@ -136,7 +136,7 @@ func TestGetResource(t *testing.T) {
 		t.Log(err.Error())
 		return
 	}
-	resStr, _ = json.Marshal(res)
+	resStr, _ = jsoniter.Marshal(res)
 	t.Log(string(resStr))
 
 	res, err = client.DescribeAvailableResource(cloud.DescribeAvailableResourceRequest{})
@@ -144,7 +144,7 @@ func TestGetResource(t *testing.T) {
 		t.Log(err.Error())
 		return
 	}
-	resStr, _ = json.Marshal(res)
+	resStr, _ = jsoniter.Marshal(res)
 	t.Log(string(resStr))
 
 	res, err = client.DescribeInstanceTypes(cloud.DescribeInstanceTypesRequest{TypeName: []string{"1"}})
@@ -152,7 +152,7 @@ func TestGetResource(t *testing.T) {
 		t.Log(err.Error())
 		return
 	}
-	resStr, _ = json.Marshal(res)
+	resStr, _ = jsoniter.Marshal(res)
 	t.Log(string(resStr))
 
 	res, err = client.DescribeImages(cloud.DescribeImagesRequest{InsType: "c6s.large.2"})
@@ -160,7 +160,7 @@ func TestGetResource(t *testing.T) {
 		t.Log(err.Error())
 		return
 	}
-	resStr, _ = json.Marshal(res)
+	resStr, _ = jsoniter.Marshal(res)
 	t.Log(string(resStr))
 }
 
@@ -173,14 +173,14 @@ func TestCreateSecGrp(t *testing.T) {
 
 	req := cloud.CreateSecurityGroupRequest{
 		SecurityGroupName: "test2",
-		VpcId:             "dd57a464-b590-466e-b572-8fe19fe7d67f",
+		VpcId:             "",
 	}
 	res, err := client.CreateSecurityGroup(req)
 	if err != nil {
 		t.Log(err.Error())
 		return
 	}
-	resStr, _ := json.Marshal(res)
+	resStr, _ := jsoniter.Marshal(res)
 	t.Log(string(resStr))
 }
 
@@ -192,7 +192,7 @@ func TestAddSecGrpRule(t *testing.T) {
 	}
 
 	req := cloud.AddSecurityGroupRuleRequest{
-		SecurityGroupId: "347040a4-1ace-454f-b6b3-320a76b334a4",
+		SecurityGroupId: "",
 		IpProtocol:      "udp",
 		PortRange:       "8894",
 		CidrIp:          "192.168.1.1/24",
@@ -204,7 +204,7 @@ func TestAddSecGrpRule(t *testing.T) {
 	}
 
 	req = cloud.AddSecurityGroupRuleRequest{
-		SecurityGroupId: "347040a4-1ace-454f-b6b3-320a76b334a4",
+		SecurityGroupId: "",
 		IpProtocol:      "tcp",
 		PortRange:       "1000",
 		CidrIp:          "192.168.1.1/24",
@@ -226,23 +226,23 @@ func TestShowSecGrp(t *testing.T) {
 	var res interface{}
 	var resStr []byte
 	res, err = client.DescribeSecurityGroups(cloud.DescribeSecurityGroupsRequest{
-		VpcId: "dd57a464-b590-466e-b572-8fe19fe7d67f",
+		VpcId: "",
 	})
 	if err != nil {
 		t.Log(err.Error())
 		return
 	}
-	resStr, _ = json.Marshal(res)
+	resStr, _ = jsoniter.Marshal(res)
 	t.Log(string(resStr))
 
 	res, err = client.DescribeGroupRules(cloud.DescribeGroupRulesRequest{
-		SecurityGroupId: "347040a4-1ace-454f-b6b3-320a76b334a4",
+		SecurityGroupId: "",
 	})
 	if err != nil {
 		t.Log(err.Error())
 		return
 	}
-	resStr, _ = json.Marshal(res)
+	resStr, _ = jsoniter.Marshal(res)
 	t.Log(string(resStr))
 }
 
@@ -262,7 +262,7 @@ func TestCreateVpc(t *testing.T) {
 		t.Log(err.Error())
 		return
 	}
-	resStr, _ = json.Marshal(vpc)
+	resStr, _ = jsoniter.Marshal(vpc)
 	t.Log(string(resStr))
 }
 
@@ -276,7 +276,7 @@ func TestCreateSubnet(t *testing.T) {
 	var res interface{}
 	var resStr []byte
 
-	vpcId := "5ab358bd-c4d4-4be6-b71c-13c2ea3f7251"
+	vpcId := ""
 	res, err = client.CreateSwitch(cloud.CreateSwitchRequest{
 		ZoneId:      "",
 		CidrBlock:   "10.8.0.0/18",
@@ -288,7 +288,7 @@ func TestCreateSubnet(t *testing.T) {
 		t.Log(err.Error())
 		return
 	}
-	resStr, _ = json.Marshal(res)
+	resStr, _ = jsoniter.Marshal(res)
 	t.Log(string(resStr))
 }
 
@@ -301,8 +301,8 @@ func TestShowVpc(t *testing.T) {
 
 	var res interface{}
 	var resStr []byte
-	vpcId := "dd57a464-b590-466e-b572-8fe19fe7d67f"
-	swId := "3719e837-9897-43bc-819a-d1c9e60ab72f"
+	vpcId := ""
+	swId := ""
 	res, err = client.GetVPC(cloud.GetVpcRequest{
 		VpcId: vpcId,
 	})
@@ -310,7 +310,7 @@ func TestShowVpc(t *testing.T) {
 		t.Log(err.Error())
 		return
 	}
-	resStr, _ = json.Marshal(res)
+	resStr, _ = jsoniter.Marshal(res)
 	t.Log(string(resStr))
 
 	res, err = client.DescribeVpcs(cloud.DescribeVpcsRequest{})
@@ -318,7 +318,7 @@ func TestShowVpc(t *testing.T) {
 		t.Log(err.Error())
 		return
 	}
-	resStr, _ = json.Marshal(res)
+	resStr, _ = jsoniter.Marshal(res)
 	t.Log(string(resStr))
 
 	res, err = client.GetSwitch(cloud.GetSwitchRequest{
@@ -328,7 +328,7 @@ func TestShowVpc(t *testing.T) {
 		t.Log(err.Error())
 		return
 	}
-	resStr, _ = json.Marshal(res)
+	resStr, _ = jsoniter.Marshal(res)
 	t.Log(string(resStr))
 
 	res, err = client.DescribeSwitches(cloud.DescribeSwitchesRequest{
@@ -338,6 +338,6 @@ func TestShowVpc(t *testing.T) {
 		t.Log(err.Error())
 		return
 	}
-	resStr, _ = json.Marshal(res)
+	resStr, _ = jsoniter.Marshal(res)
 	t.Log(string(resStr))
 }

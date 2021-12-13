@@ -2,6 +2,7 @@ package huawei
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -94,8 +95,8 @@ func (p *HuaweiCloud) BatchCreate(m cloud.Params, num int) ([]string, error) {
 	if err != nil {
 		return []string{}, err
 	}
-	if response.HttpStatusCode != 200 {
-		return []string{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+	if response.HttpStatusCode != http.StatusOK {
+		return []string{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, *response.JobId)
 	}
 	return *(response.ServerIds), nil
 }
@@ -103,7 +104,7 @@ func (p *HuaweiCloud) BatchCreate(m cloud.Params, num int) ([]string, error) {
 func (p *HuaweiCloud) GetInstances(ids []string) (instances []cloud.Instance, err error) {
 	idNum := len(ids)
 	if idNum < 1 {
-		return nil, nil
+		return []cloud.Instance{}, nil
 	}
 	request := &model.ShowServerRequest{}
 	ecsInfos := make([]model.ServerDetail, 0, idNum)
@@ -117,8 +118,8 @@ func (p *HuaweiCloud) GetInstances(ids []string) (instances []cloud.Instance, er
 			logs.Logger.Errorf("ShowServer failed, %s, %s", id, err.Error())
 			continue
 		}
-		if response.HttpStatusCode != 200 {
-			logs.Logger.Errorf("id %s, httpcode %d, %v", id, response.HttpStatusCode, response)
+		if response.HttpStatusCode != http.StatusOK {
+			logs.Logger.Errorf("id %s, httpcode %d", id, response.HttpStatusCode)
 			continue
 		}
 		ecsInfos = append(ecsInfos, *(response.Server))
@@ -145,8 +146,8 @@ func (p *HuaweiCloud) GetInstancesByTags(regionId string, tags []cloud.Tag) (ins
 		if err != nil {
 			return nil, err
 		}
-		if response.HttpStatusCode != 200 {
-			return nil, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+		if response.HttpStatusCode != http.StatusOK {
+			return nil, fmt.Errorf("httpcode %d", response.HttpStatusCode)
 		}
 		ecsInfos = append(ecsInfos, *(response.Servers)...)
 		if int32(pageNum*_pageSize) >= *response.Count {
@@ -186,8 +187,8 @@ func (p *HuaweiCloud) BatchDelete(ids []string, regionId string) error {
 		if err != nil {
 			return err
 		}
-		if response.HttpStatusCode != 200 {
-			return fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+		if response.HttpStatusCode != http.StatusOK {
+			return fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, *response.JobId)
 		}
 	}
 	return nil
@@ -213,8 +214,8 @@ func (p *HuaweiCloud) StartInstances(ids []string) error {
 		if err != nil {
 			return err
 		}
-		if response.HttpStatusCode != 200 {
-			return fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+		if response.HttpStatusCode != http.StatusOK {
+			return fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, *response.JobId)
 		}
 	}
 	return nil
@@ -240,8 +241,8 @@ func (p *HuaweiCloud) StopInstances(ids []string) error {
 		if err != nil {
 			return err
 		}
-		if response.HttpStatusCode != 200 {
-			return fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+		if response.HttpStatusCode != http.StatusOK {
+			return fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, *response.JobId)
 		}
 	}
 	return nil
@@ -254,8 +255,8 @@ func (p *HuaweiCloud) GetZones(req cloud.GetZonesRequest) (cloud.GetZonesRespons
 	if err != nil {
 		return cloud.GetZonesResponse{}, err
 	}
-	if response.HttpStatusCode != 200 {
-		return cloud.GetZonesResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+	if response.HttpStatusCode != http.StatusOK {
+		return cloud.GetZonesResponse{}, fmt.Errorf("httpcode %d", response.HttpStatusCode)
 	}
 
 	zones := make([]cloud.Zone, 0, len(*response.AvailabilityZoneInfo))
@@ -294,8 +295,8 @@ func (p *HuaweiCloud) DescribeAvailableResource(req cloud.DescribeAvailableResou
 		if err != nil {
 			return cloud.DescribeAvailableResourceResponse{}, err
 		}
-		if response.HttpStatusCode != 200 {
-			return cloud.DescribeAvailableResourceResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+		if response.HttpStatusCode != http.StatusOK {
+			return cloud.DescribeAvailableResourceResponse{}, fmt.Errorf("httpcode %d", response.HttpStatusCode)
 		}
 
 		insType := make([]cloud.InstanceType, 0, len(*response.Flavors))

@@ -2,6 +2,7 @@ package alibaba
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -117,7 +118,7 @@ func New(AK, SK, region string) (*AlibabaCloud, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &AlibabaCloud{client: client, vpcClient: vpcClt, ecsClient: ecsClt, bssClient: bssCtl}, err
+	return &AlibabaCloud{client: client, vpcClient: vpcClt, ecsClient: ecsClt, bssClient: bssCtl}, nil
 }
 
 // BatchCreate the maximum of 'num' is 100
@@ -194,9 +195,12 @@ func (p *AlibabaCloud) BatchDelete(ids []string, regionId string) (err error) {
 	for _, onceIds := range batchIds {
 		request.InstanceId = &onceIds
 		response, err = p.client.DeleteInstances(request)
+		if err != nil {
+			return err
+		}
 		logs.Logger.Infof("[BatchDelete] requestId: %s", response.RequestId)
 	}
-	return err
+	return nil
 }
 
 func (p *AlibabaCloud) StartInstances(ids []string) error {
@@ -660,11 +664,10 @@ func (p *AlibabaCloud) DescribeInstanceTypes(req cloud.DescribeInstanceTypesRequ
 			})
 		}
 
-		insTypeNum := len(response.Body.InstanceTypes.InstanceType)
-		if insTypeNum < pageSize {
+		nextToken = *response.Body.NextToken
+		if nextToken == "" {
 			break
 		}
-		nextToken = *response.Body.NextToken
 	}
 
 	return cloud.DescribeInstanceTypesResponse{Infos: insTypeInfo}, nil
@@ -683,6 +686,9 @@ func (p *AlibabaCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.De
 	for {
 		request.PageNumber = tea.Int32(page)
 		response, err := p.ecsClient.DescribeImages(request)
+		if err != nil {
+			return cloud.DescribeImagesResponse{}, fmt.Errorf("pageNumber:%d pageSize:%d region:%s, %v", page, 50, req.RegionId, err)
+		}
 		if response != nil && response.Body != nil && response.Body.Images != nil {
 			for _, img := range response.Body.Images.Image {
 				images = append(images, cloud.Image{
@@ -697,9 +703,6 @@ func (p *AlibabaCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.De
 			} else {
 				break
 			}
-		}
-		if err != nil {
-			logs.Logger.Errorf("DescribeImages failed,error: %v pageNumber:%d pageSize:%d region:%s", err, page, 50, req.RegionId)
 		}
 	}
 	return cloud.DescribeImagesResponse{Images: images}, nil

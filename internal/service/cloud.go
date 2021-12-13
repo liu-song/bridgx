@@ -237,7 +237,7 @@ func getAlibabaCloudClient(ak, region string) (cloud.Provider, error) {
 		return nil, err
 	}
 	clientMap.Store(key, client)
-	return client, err
+	return client, nil
 }
 
 func getHuaweiCloudClient(ak, region string) (cloud.Provider, error) {
@@ -258,7 +258,7 @@ func getHuaweiCloudClient(ak, region string) (cloud.Provider, error) {
 		return nil, err
 	}
 	huaweiCliMap.Store(key, client)
-	return client, err
+	return client, nil
 }
 
 func Shrink(clusterInfo *types.ClusterInfo, instanceIds []string) error {

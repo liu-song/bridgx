@@ -2,6 +2,7 @@ package huawei
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/galaxy-future/BridgX/internal/logs"
@@ -24,8 +25,8 @@ func (p *HuaweiCloud) CreateVPC(req cloud.CreateVpcRequest) (cloud.CreateVpcResp
 	if err != nil {
 		return cloud.CreateVpcResponse{}, err
 	}
-	if response.HttpStatusCode != 200 {
-		return cloud.CreateVpcResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+	if response.HttpStatusCode != http.StatusOK {
+		return cloud.CreateVpcResponse{}, fmt.Errorf("httpcode %d", response.HttpStatusCode)
 	}
 
 	res := cloud.CreateVpcResponse{
@@ -43,8 +44,8 @@ func (p *HuaweiCloud) GetVPC(req cloud.GetVpcRequest) (cloud.GetVpcResponse, err
 	if err != nil {
 		return cloud.GetVpcResponse{}, err
 	}
-	if response.HttpStatusCode != 200 {
-		return cloud.GetVpcResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+	if response.HttpStatusCode != http.StatusOK {
+		return cloud.GetVpcResponse{}, fmt.Errorf("httpcode %d", response.HttpStatusCode)
 	}
 
 	switchs, err := p.DescribeSwitches(cloud.DescribeSwitchesRequest{
@@ -77,8 +78,8 @@ func (p *HuaweiCloud) DescribeVpcs(req cloud.DescribeVpcsRequest) (cloud.Describ
 		if err != nil {
 			return cloud.DescribeVpcsResponse{}, err
 		}
-		if response.HttpStatusCode != 200 {
-			return cloud.DescribeVpcsResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+		if response.HttpStatusCode != http.StatusOK {
+			return cloud.DescribeVpcsResponse{}, fmt.Errorf("httpcode %d", response.HttpStatusCode)
 		}
 
 		vpcs = append(vpcs, *response.Vpcs...)
@@ -125,8 +126,8 @@ func (p *HuaweiCloud) CreateSwitch(req cloud.CreateSwitchRequest) (cloud.CreateS
 	if err != nil {
 		return cloud.CreateSwitchResponse{}, err
 	}
-	if response.HttpStatusCode != 200 {
-		return cloud.CreateSwitchResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+	if response.HttpStatusCode != http.StatusOK {
+		return cloud.CreateSwitchResponse{}, fmt.Errorf("httpcode %d", response.HttpStatusCode)
 	}
 
 	return cloud.CreateSwitchResponse{SwitchId: response.Subnet.Id}, nil
@@ -140,8 +141,8 @@ func (p *HuaweiCloud) GetSwitch(req cloud.GetSwitchRequest) (cloud.GetSwitchResp
 	if err != nil {
 		return cloud.GetSwitchResponse{}, err
 	}
-	if response.HttpStatusCode != 200 {
-		return cloud.GetSwitchResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+	if response.HttpStatusCode != http.StatusOK {
+		return cloud.GetSwitchResponse{}, fmt.Errorf("httpcode %d", response.HttpStatusCode)
 	}
 
 	usedIpNum, err := p.getUsedIpNum([]string{req.SwitchId})
@@ -169,8 +170,8 @@ func (p *HuaweiCloud) DescribeSwitches(req cloud.DescribeSwitchesRequest) (cloud
 		if err != nil {
 			return cloud.DescribeSwitchesResponse{}, err
 		}
-		if response.HttpStatusCode != 200 {
-			return cloud.DescribeSwitchesResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+		if response.HttpStatusCode != http.StatusOK {
+			return cloud.DescribeSwitchesResponse{}, fmt.Errorf("httpcode %d", response.HttpStatusCode)
 		}
 
 		subnets = append(subnets, *response.Subnets...)
@@ -237,8 +238,8 @@ func (p *HuaweiCloud) getUsedIpNum(switchIds []string) (map[string]int, error) {
 		if err != nil {
 			return nil, err
 		}
-		if response.HttpStatusCode != 200 {
-			logs.Logger.Errorf("%s, httpcode %d, %v", switchId, response.HttpStatusCode, response)
+		if response.HttpStatusCode != http.StatusOK {
+			logs.Logger.Errorf("%s, httpcode %d", switchId, response.HttpStatusCode)
 			continue
 		}
 

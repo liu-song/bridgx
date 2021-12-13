@@ -2,6 +2,7 @@ package huawei
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/galaxy-future/BridgX/internal/logs"
 	"github.com/galaxy-future/BridgX/pkg/cloud"
@@ -86,8 +87,8 @@ func (p *HuaweiCloud) GetRegions() (cloud.GetRegionsResponse, error) {
 	if err != nil {
 		return cloud.GetRegionsResponse{}, err
 	}
-	if response.HttpStatusCode != 200 {
-		return cloud.GetRegionsResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+	if response.HttpStatusCode != http.StatusOK {
+		return cloud.GetRegionsResponse{}, fmt.Errorf("httpcode %d", response.HttpStatusCode)
 	}
 
 	regions := make([]cloud.Region, 0, len(*response.Regions))
@@ -128,8 +129,8 @@ func (p *HuaweiCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.Des
 		if err != nil {
 			return cloud.DescribeImagesResponse{}, err
 		}
-		if response.HttpStatusCode != 200 {
-			return cloud.DescribeImagesResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+		if response.HttpStatusCode != http.StatusOK {
+			return cloud.DescribeImagesResponse{}, fmt.Errorf("httpcode %d", response.HttpStatusCode)
 		}
 
 		for _, img := range *response.Images {

@@ -2,6 +2,7 @@ package huawei
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/galaxy-future/BridgX/pkg/cloud"
@@ -22,8 +23,8 @@ func (p *HuaweiCloud) CreateSecurityGroup(req cloud.CreateSecurityGroupRequest) 
 	if err != nil {
 		return cloud.CreateSecurityGroupResponse{}, err
 	}
-	if response.HttpStatusCode != 201 {
-		return cloud.CreateSecurityGroupResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+	if response.HttpStatusCode != http.StatusCreated {
+		return cloud.CreateSecurityGroupResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, *response.RequestId)
 	}
 
 	return cloud.CreateSecurityGroupResponse{SecurityGroupId: response.SecurityGroup.Id,
@@ -55,8 +56,8 @@ func (p *HuaweiCloud) DescribeSecurityGroups(req cloud.DescribeSecurityGroupsReq
 		if err != nil {
 			return cloud.DescribeSecurityGroupsResponse{}, err
 		}
-		if response.HttpStatusCode != 200 {
-			return cloud.DescribeSecurityGroupsResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+		if response.HttpStatusCode != http.StatusOK {
+			return cloud.DescribeSecurityGroupsResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, *response.RequestId)
 		}
 		for _, group := range *response.SecurityGroups {
 			groups = append(groups, cloud.SecurityGroup{
@@ -86,8 +87,8 @@ func (p *HuaweiCloud) DescribeGroupRules(req cloud.DescribeGroupRulesRequest) (c
 	if err != nil {
 		return cloud.DescribeGroupRulesResponse{}, err
 	}
-	if response.HttpStatusCode != 200 {
-		return cloud.DescribeGroupRulesResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+	if response.HttpStatusCode != http.StatusOK {
+		return cloud.DescribeGroupRulesResponse{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, *response.RequestId)
 	}
 
 	for _, rule := range response.SecurityGroup.SecurityGroupRules {
@@ -136,8 +137,8 @@ func (p *HuaweiCloud) addSecGrpRule(req cloud.AddSecurityGroupRuleRequest, direc
 	if err != nil {
 		return err
 	}
-	if response.HttpStatusCode != 201 {
-		return fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, response)
+	if response.HttpStatusCode != http.StatusCreated {
+		return fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, *response.RequestId)
 	}
 	return nil
 }

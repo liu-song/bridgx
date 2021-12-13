@@ -76,11 +76,11 @@ const (
 const (
 	VPCStatusPending   = "Pending"
 	VPCStatusAvailable = "Available"
-	VPCStatusAbnormal  = "abnormal"
+	VPCStatusAbnormal  = "Abnormal"
 )
 
 const (
 	SubnetPending   = "Pending"
 	SubnetAvailable = "Available"
-	SubnetAbnormal  = "abnormal"
+	SubnetAbnormal  = "Abnormal"
 )
