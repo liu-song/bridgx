@@ -930,7 +930,8 @@ type AddSecurityGroupRuleRequest struct {
 
 type GroupRule struct {
 	Protocol     string `json:"protocol"`
-	PortRange    string `json:"port_range"`
+	PortFrom     int    `json:"port_from"`
+	PortTo       int    `json:"port_to"`
 	Direction    string `json:"direction"`
 	GroupId      string `json:"group_id"`
 	CidrIp       string `json:"cidr_ip"`
@@ -974,7 +975,8 @@ func AddSecurityGroupRule(ctx context.Context, req AddSecurityGroupRuleRequest) 
 			VpcId:           vpcId,
 			SecurityGroupId: groupIdStruct.SecurityGroupId,
 			IpProtocol:      rule.Protocol,
-			PortRange:       rule.PortRange,
+			PortFrom:        rule.PortFrom,
+			PortTo:          rule.PortTo,
 			GroupId:         rule.GroupId,
 			CidrIp:          rule.CidrIp,
 			PrefixListId:    rule.PrefixListId,
@@ -996,7 +998,7 @@ func AddSecurityGroupRule(ctx context.Context, req AddSecurityGroupRuleRequest) 
 			},
 			VpcId:           vpcId,
 			SecurityGroupId: groupIdStruct.SecurityGroupId,
-			PortRange:       rule.PortRange,
+			PortRange:       fmt.Sprintf("%d-%d", rule.PortFrom, rule.PortTo),
 			Protocol:        rule.Protocol,
 			Direction:       rule.Direction,
 			GroupId:         rule.GroupId,

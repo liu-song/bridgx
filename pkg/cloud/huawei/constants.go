@@ -3,6 +3,7 @@ package huawei
 import (
 	"github.com/galaxy-future/BridgX/pkg/cloud"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ecs/v2/model"
+	imsModel "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ims/v2/model"
 )
 
 const (
@@ -11,6 +12,22 @@ const (
 )
 
 //in
+var _inEcsChargeType = map[string]model.PrePaidServerExtendParamChargingMode{
+	cloud.InstanceChargeTypePrePaid:  model.GetPrePaidServerExtendParamChargingModeEnum().PRE_PAID,
+	cloud.InstanceChargeTypePostPaid: model.GetPrePaidServerExtendParamChargingModeEnum().POST_PAID,
+}
+
+var _ecsPeriodType = map[string]model.PrePaidServerExtendParamPeriodType{
+	"month": model.GetPrePaidServerExtendParamPeriodTypeEnum().MONTH,
+	"year":  model.GetPrePaidServerExtendParamPeriodTypeEnum().YEAR,
+}
+
+var _imageType = map[string]imsModel.ListImagesRequestImagetype{
+	cloud.ImageGlobal:  imsModel.GetListImagesRequestImagetypeEnum().GOLD,
+	cloud.ImageShared:  imsModel.GetListImagesRequestImagetypeEnum().SHARED,
+	cloud.ImagePrivate: imsModel.GetListImagesRequestImagetypeEnum().PRIVATE,
+}
+
 var _rootDiskCategory = map[string]model.PrePaidServerRootVolumeVolumetype{
 	"SATA":  model.GetPrePaidServerRootVolumeVolumetypeEnum().SATA,
 	"SAS":   model.GetPrePaidServerRootVolumeVolumetypeEnum().SAS,
@@ -44,8 +61,8 @@ var _protocol = map[string]string{
 
 //out
 var _ecsChargeType = map[string]string{
-	"0": cloud.PostPaid,
-	"1": cloud.PrePaid,
+	"0": cloud.InstanceChargeTypePostPaid,
+	"1": cloud.InstanceChargeTypePrePaid,
 }
 
 var _ecsStatus = map[string]string{

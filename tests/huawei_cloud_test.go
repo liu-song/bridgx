@@ -194,7 +194,8 @@ func TestAddSecGrpRule(t *testing.T) {
 	req := cloud.AddSecurityGroupRuleRequest{
 		SecurityGroupId: "",
 		IpProtocol:      "udp",
-		PortRange:       "8894",
+		PortFrom:        8894,
+		PortTo:          8895,
 		CidrIp:          "192.168.1.1/24",
 	}
 	err = client.AddIngressSecurityGroupRule(req)
@@ -206,7 +207,8 @@ func TestAddSecGrpRule(t *testing.T) {
 	req = cloud.AddSecurityGroupRuleRequest{
 		SecurityGroupId: "",
 		IpProtocol:      "tcp",
-		PortRange:       "1000",
+		PortFrom:        1000,
+		PortTo:          1000,
 		CidrIp:          "192.168.1.1/24",
 	}
 	err = client.AddEgressSecurityGroupRule(req)

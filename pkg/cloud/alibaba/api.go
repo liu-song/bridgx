@@ -454,11 +454,12 @@ func (p *AlibabaCloud) CreateSecurityGroup(req cloud.CreateSecurityGroupRequest)
 }
 
 func (p *AlibabaCloud) AddIngressSecurityGroupRule(req cloud.AddSecurityGroupRuleRequest) error {
+	portRange := fmt.Sprintf("%d/%d", req.PortFrom, req.PortTo)
 	request := &ecsClient.AuthorizeSecurityGroupRequest{
 		RegionId:           tea.String(req.RegionId),
 		SecurityGroupId:    tea.String(req.SecurityGroupId),
 		IpProtocol:         tea.String(_protocol[req.IpProtocol]),
-		PortRange:          tea.String(req.PortRange),
+		PortRange:          tea.String(portRange),
 		SourceGroupId:      tea.String(req.GroupId),
 		SourceCidrIp:       tea.String(req.CidrIp),
 		SourcePrefixListId: tea.String(req.PrefixListId),
@@ -473,11 +474,12 @@ func (p *AlibabaCloud) AddIngressSecurityGroupRule(req cloud.AddSecurityGroupRul
 }
 
 func (p *AlibabaCloud) AddEgressSecurityGroupRule(req cloud.AddSecurityGroupRuleRequest) error {
+	portRange := fmt.Sprintf("%d/%d", req.PortFrom, req.PortTo)
 	request := &ecsClient.AuthorizeSecurityGroupEgressRequest{
 		RegionId:         tea.String(req.RegionId),
 		SecurityGroupId:  tea.String(req.SecurityGroupId),
 		IpProtocol:       tea.String(req.IpProtocol),
-		PortRange:        tea.String(req.PortRange),
+		PortRange:        tea.String(portRange),
 		DestGroupId:      tea.String(req.GroupId),
 		DestCidrIp:       tea.String(req.CidrIp),
 		DestPrefixListId: tea.String(req.PrefixListId),
@@ -677,8 +679,9 @@ func (p *AlibabaCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.De
 	var page int32 = 1
 	images := make([]cloud.Image, 0)
 	request := &ecsClient.DescribeImagesRequest{
-		RegionId: tea.String(req.RegionId),
-		PageSize: tea.Int32(50),
+		RegionId:        tea.String(req.RegionId),
+		PageSize:        tea.Int32(50),
+		ImageOwnerAlias: tea.String(_imageType[req.ImageType]),
 	}
 	if req.InsType != "" {
 		request.InstanceType = tea.String(req.InsType)

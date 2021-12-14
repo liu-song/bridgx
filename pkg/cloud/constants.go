@@ -44,6 +44,12 @@ const (
 )
 
 const (
+	ImageGlobal  = "global"
+	ImagePrivate = "private"
+	ImageShared  = "shared"
+)
+
+const (
 	SecGroupRuleIn  = "ingress"
 	SecGroupRuleOut = "egress"
 )

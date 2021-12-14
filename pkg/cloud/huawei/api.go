@@ -105,10 +105,8 @@ func (p *HuaweiCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.Des
 	pageSize := 500
 	images := make([]cloud.Image, 0, pageSize)
 	request := &imsModel.ListImagesRequest{}
-	imageType := imsModel.GetListImagesRequestImagetypeEnum().GOLD
+	imageType := _imageType[req.ImageType]
 	request.Imagetype = &imageType
-	isProtected := true
-	request.Protected = &isProtected
 	sortDirRequest := imsModel.GetListImagesRequestSortDirEnum().DESC
 	request.SortDir = &sortDirRequest
 	sortKeyRequest := imsModel.GetListImagesRequestSortKeyEnum().NAME

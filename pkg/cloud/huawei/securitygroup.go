@@ -7,6 +7,7 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/galaxy-future/BridgX/pkg/cloud"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/vpc/v3/model"
+	"github.com/spf13/cast"
 )
 
 // CreateSecurityGroup 将VpcId写入Description，方便查找
@@ -117,8 +118,12 @@ func (p *HuaweiCloud) addSecGrpRule(req cloud.AddSecurityGroupRuleRequest, direc
 	if req.IpProtocol != "" {
 		secGrpRuleOpt.Protocol = tea.String(_protocol[req.IpProtocol])
 	}
-	if req.PortRange != "" {
-		secGrpRuleOpt.Multiport = &req.PortRange
+	if req.PortFrom > 0 {
+		portRange := cast.ToString(req.PortFrom)
+		if req.PortFrom != req.PortTo {
+			portRange = fmt.Sprintf("%d-%d", req.PortFrom, req.PortTo)
+		}
+		secGrpRuleOpt.Multiport = &portRange
 	}
 	if req.CidrIp != "" {
 		secGrpRuleOpt.RemoteIpPrefix = &req.CidrIp

@@ -1,6 +1,8 @@
 package alibaba
 
-import "github.com/galaxy-future/BridgX/pkg/cloud"
+import (
+	"github.com/galaxy-future/BridgX/pkg/cloud"
+)
 
 const (
 	_subOrderNumPerMain    = 3
@@ -8,6 +10,12 @@ const (
 )
 
 //in
+var _imageType = map[string]string{
+	cloud.ImageGlobal:  "system",
+	cloud.ImageShared:  "others",
+	cloud.ImagePrivate: "self",
+}
+
 var _protocol = map[string]string{
 	cloud.ProtocolIcmp: "icmp",
 	cloud.ProtocolTcp:  "tcp",

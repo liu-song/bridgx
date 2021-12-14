@@ -130,7 +130,8 @@ type AddSecurityGroupRuleRequest struct {
 	VpcId           string
 	SecurityGroupId string
 	IpProtocol      string
-	PortRange       string
+	PortFrom        int
+	PortTo          int
 	GroupId         string
 	CidrIp          string
 	PrefixListId    string
@@ -231,8 +232,9 @@ type DescribeInstanceTypesResponse struct {
 	Infos []InstanceInfo
 }
 type DescribeImagesRequest struct {
-	RegionId string
-	InsType  string
+	RegionId  string
+	InsType   string
+	ImageType string
 }
 
 type DescribeImagesResponse struct {

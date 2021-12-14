@@ -36,9 +36,14 @@ func (p *HuaweiCloud) BatchCreate(m cloud.Params, num int) ([]string, error) {
 
 	adminPassServerPrePaidServer := m.Password
 	countServerPrePaidServer := int32(num)
-	chargeType := model.GetPrePaidServerExtendParamChargingModeEnum().POST_PAID
+
+	chargeType := _inEcsChargeType[m.Charge.ChargeType]
+	periodType := _ecsPeriodType[m.Charge.PeriodUnit]
+	periodNum := int32(m.Charge.Period)
 	extendParam := &model.PrePaidServerExtendParam{
 		ChargingMode: &chargeType,
+		PeriodType:   &periodType,
+		PeriodNum:    &periodNum,
 	}
 	listServerTagsServer := make([]model.PrePaidServerTag, 0, len(m.Tags))
 	for _, tag := range m.Tags {
