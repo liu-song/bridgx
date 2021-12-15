@@ -986,8 +986,11 @@ func AddSecurityGroupRule(ctx context.Context, req AddSecurityGroupRuleRequest) 
 			err = p.AddIngressSecurityGroupRule(addRuleReq)
 		case DirectionOut:
 			err = p.AddEgressSecurityGroupRule(addRuleReq)
+		default:
+			err = fmt.Errorf("invalid direction %s", rule.Direction)
 		}
 		if err != nil {
+			logs.Logger.Error(err)
 			continue
 		}
 		now := time.Now()

@@ -18,8 +18,8 @@ var _inEcsChargeType = map[string]model.PrePaidServerExtendParamChargingMode{
 }
 
 var _ecsPeriodType = map[string]model.PrePaidServerExtendParamPeriodType{
-	"month": model.GetPrePaidServerExtendParamPeriodTypeEnum().MONTH,
-	"year":  model.GetPrePaidServerExtendParamPeriodTypeEnum().YEAR,
+	"Month": model.GetPrePaidServerExtendParamPeriodTypeEnum().MONTH,
+	"Year":  model.GetPrePaidServerExtendParamPeriodTypeEnum().YEAR,
 }
 
 var _imageType = map[string]imsModel.ListImagesRequestImagetype{
