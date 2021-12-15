@@ -140,6 +140,11 @@ func (s *SimpleTaskHandler) taskHandle(t *SimpleTask) {
 }
 
 func refreshInstanceType(t *SimpleTask) error {
+	err := SyncInstanceTypes(context.Background(), t.ProviderName)
+	if err != nil {
+		logs.Logger.Error("SyncInstanceTypes failed :%v", err)
+		return err
+	}
 	return RefreshCache()
 }
 
@@ -833,6 +838,7 @@ func CreateSecurityGroup(ctx context.Context, req CreateSecurityGroupRequest) (s
 		SecurityGroupType: req.SecurityGroupType,
 	})
 	if err != nil {
+		logs.Logger.Error(err)
 		return "", errs.ErrCreateSecurityGroupFailed
 	}
 	now := time.Now()
