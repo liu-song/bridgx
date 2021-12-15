@@ -65,11 +65,11 @@ docker-compose-build:
 	docker-compose build
 
 docker-tag:
-	docker tag bridgx_api galaxyfuture/bridgx-api:latest
-	docker tag bridgx_scheduler galaxyfuture/bridgx-scheduler:latest
+	docker tag bridgx_api:huawei galaxyfuture/bridgx-api:huawei
+	docker tag bridgx_scheduler:huawei galaxyfuture/bridgx-scheduler:huawei
 
 docker-push-hub:
-	docker push galaxyfuture/bridgx-api:latest
-	docker push galaxyfuture/bridgx-scheduler:latest
+	docker push galaxyfuture/bridgx-api:huawei
+	docker push galaxyfuture/bridgx-scheduler:huawei
 
 docker-hub-all: docker-compose-build docker-tag docker-push-hub

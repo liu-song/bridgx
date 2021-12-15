@@ -23,7 +23,7 @@ func TestSyncInstanceTypes(t *testing.T) {
 			name: "",
 			args: args{
 				ctx:      context.Background(),
-				provider: cloud.AlibabaCloud,
+				provider: cloud.HuaweiCloud,
 			},
 			wantErr: false,
 		},
