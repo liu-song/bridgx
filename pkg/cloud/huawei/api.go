@@ -150,7 +150,6 @@ func (p *HuaweiCloud) DescribeImages(req cloud.DescribeImagesRequest) (cloud.Des
 }
 
 func (p *HuaweiCloud) GetOrders(req cloud.GetOrdersRequest) (cloud.GetOrdersResponse, error) {
-	orders := make([]cloud.Order, 0, 1)
-
+	orders := make([]cloud.Order, 0, 0)
 	return cloud.GetOrdersResponse{Orders: orders}, nil
 }

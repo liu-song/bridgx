@@ -383,7 +383,7 @@ func refreshSwitch(t *SimpleTask) error {
 	return model.UpdateSwitch(context.Background(),
 		vswitch.AvailableIpAddressCount, vswitch.IsDefault,
 		vswitch.VpcId, vswitch.SwitchId, vswitch.Name,
-		vswitch.VStatus, vswitch.CidrBlock)
+		vswitch.VStatus, vswitch.CidrBlock, vswitch.GatewayIp)
 }
 
 const (
@@ -697,6 +697,7 @@ func CreateSwitch(ctx context.Context, req CreateSwitchRequest) (switchId string
 		ZoneId:    req.ZoneId,
 		Name:      req.SwitchName,
 		CidrBlock: req.CidrBlock,
+		GatewayIp: req.GatewayIp,
 		IsDel:     0,
 	})
 	if err != nil {
@@ -1059,6 +1060,7 @@ func GetZones(ctx context.Context, req GetZonesRequest) ([]cloud.Zone, error) {
 		RegionId: req.RegionId,
 	})
 	if err != nil {
+		logs.Logger.Error(err)
 		return nil, errs.ErrGetZonesFailed
 	}
 	return zones.Zones, nil

@@ -172,9 +172,17 @@ func GetEnabledClusterNamesByAccounts(ctx context.Context, accountKeys []string)
 
 //ConvertToClusterInfo 将cluster，和tags转换为一个Cloud clusterInfo
 func ConvertToClusterInfo(m *model.Cluster, tags []model.ClusterTag) (*types.ClusterInfo, error) {
+	imageConfig := &types.ImageConfig{}
 	networkConfig := &types.NetworkConfig{}
 	storageConfig := &types.StorageConfig{}
 	chargeConfig := &types.ChargeConfig{}
+	if m.ImageConfig != "" {
+		err := jsoniter.UnmarshalFromString(m.ImageConfig, imageConfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	err := jsoniter.UnmarshalFromString(m.NetworkConfig, networkConfig)
 	if err != nil {
 		return nil, err
@@ -204,6 +212,7 @@ func ConvertToClusterInfo(m *model.Cluster, tags []model.ClusterTag) (*types.Clu
 		Username:       constants.DefaultUsername,
 		Password:       m.Password,
 		AccountKey:     m.AccountKey,
+		ImageConfig:    imageConfig,
 		NetworkConfig:  networkConfig,
 		StorageConfig:  storageConfig,
 		ChargeConfig:   chargeConfig,

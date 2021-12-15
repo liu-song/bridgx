@@ -171,6 +171,7 @@ type Switch struct {
 	CreateAt                string
 	ZoneId                  string
 	CidrBlock               string
+	GatewayIp               string
 }
 
 type GetSwitchResponse struct {

@@ -224,6 +224,7 @@ func subnetInfo2CloudSwitch(subnetInfo []model.Subnet, UsedIpNum map[string]int)
 			VStatus:                 _subnetStatus[string(stat)],
 			ZoneId:                  subnet.AvailabilityZone,
 			CidrBlock:               subnet.Cidr,
+			GatewayIp:               subnet.GatewayIp,
 		})
 	}
 	return switchs

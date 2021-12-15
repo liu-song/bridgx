@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"runtime/debug"
 	"strconv"
 	"sync"
@@ -48,6 +49,7 @@ func ExpandAndRepair(c *types.ClusterInfo, num int, taskId int64) ([]string, err
 		needExpandNum -= len(ids)
 	}
 	if len(expandInstanceIds) != num {
+		logs.Logger.Infof("len(expandInstanceIds) %d, num %d", len(expandInstanceIds), num)
 		_ = RepairCluster(c, taskId, expandInstanceIds)
 	}
 	return expandInstanceIds, err
@@ -128,7 +130,7 @@ func Expand(clusterInfo *types.ClusterInfo, tags []cloud.Tag, num int) (instance
 	cur := num
 	provider, err := getProvider(clusterInfo.Provider, clusterInfo.AccountKey, clusterInfo.RegionId)
 	if err != nil {
-		return
+		return nil, err
 	}
 	params, err := generateParams(clusterInfo, tags)
 	for ; cur > 0; cur -= constants.BatchMax {
@@ -138,6 +140,7 @@ func Expand(clusterInfo *types.ClusterInfo, tags []cloud.Tag, num int) (instance
 				if bErr := recover(); bErr != nil {
 					logs.Logger.Errorf("[cloud.Expand] recover error. error: %v", bErr)
 					logs.Logger.Errorf("stacktrace from panic: \n" + string(debug.Stack()))
+					createdError <- fmt.Errorf("panic %v", bErr)
 				}
 			}()
 			batchInstanceIds := make([]string, 0)
@@ -165,7 +168,7 @@ func Expand(clusterInfo *types.ClusterInfo, tags []cloud.Tag, num int) (instance
 			err = cErr
 		}
 	}
-	return
+	return instanceIds, err
 }
 
 func GetInstanceByTag(c *types.ClusterInfo, tags []cloud.Tag) (instances []cloud.Instance, err error) {
@@ -178,6 +181,9 @@ func GetInstanceByTag(c *types.ClusterInfo, tags []cloud.Tag) (instances []cloud
 
 func generateParams(clusterInfo *types.ClusterInfo, tags []cloud.Tag) (params cloud.Params, err error) {
 	params.ImageId = clusterInfo.Image
+	if clusterInfo.ImageConfig.Id != "" {
+		params.ImageId = clusterInfo.ImageConfig.Id
+	}
 	params.Network = &cloud.Network{
 		VpcId:                   clusterInfo.NetworkConfig.Vpc,
 		SubnetId:                clusterInfo.NetworkConfig.SubnetId,
