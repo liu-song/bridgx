@@ -41,10 +41,7 @@ docker-all: clean docker-build-scheduler docker-build-api docker-push-scheduler 
 # Quick start
 # Pull images from dockerhub and run
 docker-run-linux:
-	#@echo "install mysql and etcd, yes or no? "${install_mysql_etcd}
-	@echo -n "install mysql? [y/N] " && read ans && if [ $${ans:-'N'} = 'y' ]; then make docker-run-mysql; fi
-	@echo -n "install etcd? [y/N] " && read ans && if [ $${ans:-'N'} = 'y' ]; then make docker-run-etcd; fi
-    #sh ./run-for-linux.sh
+	sh ./run-for-linux.sh
 
 docker-run-mac:
 	sh ./run-for-mac.sh
