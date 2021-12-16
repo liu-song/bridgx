@@ -149,9 +149,8 @@ func GetAccountsByAk(ctx context.Context, ak string) (a Account, err error) {
 
 func GetAllProvider(ctx context.Context) (provider []string, err error) {
 	err = clients.ReadDBCli.WithContext(ctx).
-		Table(Account{}.TableName()).
+		Model(Account{}).
 		Select("provider").
-		Where("deleted_at is null").
 		Group("provider").
 		Find(&provider).Error
 	if err != nil {

@@ -682,7 +682,7 @@ func CreateSwitch(ctx context.Context, req CreateSwitchRequest) (switchId string
 		GatewayIp:   req.GatewayIp,
 	})
 	if err != nil {
-		logs.Logger.Error(err.Error())
+		logs.Logger.Errorf("CreateSwitch failed, %s", err.Error())
 		return "", errs.ErrCreateSwitchFailed
 	}
 
@@ -839,7 +839,7 @@ func CreateSecurityGroup(ctx context.Context, req CreateSecurityGroupRequest) (s
 		SecurityGroupType: req.SecurityGroupType,
 	})
 	if err != nil {
-		logs.Logger.Error(err)
+		logs.Logger.Errorf("CreateSecurityGroup failed, %s", err.Error())
 		return "", errs.ErrCreateSecurityGroupFailed
 	}
 	now := time.Now()
@@ -997,7 +997,7 @@ func AddSecurityGroupRule(ctx context.Context, req AddSecurityGroupRuleRequest) 
 			err = fmt.Errorf("invalid direction %s", rule.Direction)
 		}
 		if err != nil {
-			logs.Logger.Error(err)
+			logs.Logger.Errorf("addSecurityGroupRule failed, %s", err.Error())
 			continue
 		}
 		now := time.Now()
@@ -1060,7 +1060,7 @@ func GetZones(ctx context.Context, req GetZonesRequest) ([]cloud.Zone, error) {
 		RegionId: req.RegionId,
 	})
 	if err != nil {
-		logs.Logger.Error(err)
+		logs.Logger.Errorf("GetZones failed, %s", err.Error())
 		return nil, errs.ErrGetZonesFailed
 	}
 	return zones.Zones, nil

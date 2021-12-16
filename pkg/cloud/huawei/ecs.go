@@ -103,6 +103,12 @@ func (p *HuaweiCloud) BatchCreate(m cloud.Params, num int) ([]string, error) {
 	if response.HttpStatusCode != http.StatusOK {
 		return []string{}, fmt.Errorf("httpcode %d, %v", response.HttpStatusCode, *response.JobId)
 	}
+
+	if m.Charge.ChargeType == cloud.InstanceChargeTypePrePaid {
+		if err = p.payOrders(*response.OrderId); err != nil {
+			return nil, err
+		}
+	}
 	return *(response.ServerIds), nil
 }
 

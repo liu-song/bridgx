@@ -39,6 +39,11 @@ func TestCreateIns(t *testing.T) {
 			SystemDisk: cloud.DiskConf{Size: 40, Category: "SSD"},
 			DataDisk:   []cloud.DiskConf{},
 		},
+		Charge: &cloud.Charge{
+			ChargeType: cloud.InstanceChargeTypePostPaid,
+			Period:     1,
+			PeriodUnit: "Month",
+		},
 		Password: "xxx",
 		Tags: []cloud.Tag{
 			{
