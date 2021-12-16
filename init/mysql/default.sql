@@ -11,10 +11,11 @@ CREATE TABLE `account`
 (
     `id`             bigint(20) NOT NULL AUTO_INCREMENT,
     `account_name`   varchar(64) COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-    `account_key`    varchar(256) COLLATE utf8mb4_bin         DEFAULT NULL,
-    `account_secret` varchar(256) COLLATE utf8mb4_bin         DEFAULT NULL,
+    `account_key`    varchar(256) COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    `encrypted_account_secret` varchar(1024) COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    `salt` varchar(256) COLLATE utf8mb4_bin NOT NULL DEFAULT '',
     `org_id`         bigint(20) DEFAULT '0',
-    `provider`       varchar(64) COLLATE utf8mb4_bin          DEFAULT NULL,
+    `provider`       varchar(64) COLLATE utf8mb4_bin NOT NULL DEFAULT '',
     `create_at`      timestamp NULL DEFAULT CURRENT_TIMESTAMP,
     `update_at`      timestamp NULL DEFAULT CURRENT_TIMESTAMP,
     `create_by`      varchar(32) COLLATE utf8mb4_bin NOT NULL DEFAULT '',
@@ -158,7 +159,8 @@ CREATE TABLE `cluster`
     `deleted_at`      timestamp NULL DEFAULT NULL,
     `delete_uniq_key` bigint(20) DEFAULT '0',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `cluster_cluster_name_uindex` (`cluster_name`, `delete_uniq_key`)
+    UNIQUE KEY `cluster_cluster_name_uindex` (`cluster_name`, `delete_uniq_key`),
+    KEY `cluster_account_key_index` (`account_key`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

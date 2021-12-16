@@ -8,3 +8,4 @@ standalone-logs
 /cmd/api/api
 /cmd/scheduler/conf/*.yml
 /cmd/api/conf/*.yml
+test-deploy/
