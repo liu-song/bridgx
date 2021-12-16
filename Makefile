@@ -46,12 +46,6 @@ docker-run-linux:
 docker-run-mac:
 	sh ./run-for-mac.sh
 
-docker-run-mysql:
-	docker run -d --name bridgx_db -e MYSQL_ROOT_PASSWORD=mtQ8chN2 -e MYSQL_DATABASE=bridgx -e MYSQL_USER=gf -e MYSQL_PASSWORD=db@galaxy-future.com -p 3306:3306 -v $(pwd)/init/mysql:/docker-entrypoint-initdb.d yobasystems/alpine-mariadb:10.5.11
-
-docker-run-etcd:
-	docker run -d --name bridgx_etcd -e ALLOW_NONE_AUTHENTICATION=yes -e ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379 -p 2379:2379 -p 2380:2380 bitnami/etcd:3
-
 docker-container-stop:
 	docker ps -aq | xargs docker stop
 	docker ps -aq | xargs docker rm
