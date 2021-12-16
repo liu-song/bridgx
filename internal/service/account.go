@@ -11,7 +11,7 @@ import (
 	"github.com/galaxy-future/BridgX/internal/logs"
 	"github.com/galaxy-future/BridgX/internal/model"
 	"github.com/galaxy-future/BridgX/internal/types"
-  "github.com/galaxy-future/BridgX/pkg"
+	"github.com/galaxy-future/BridgX/pkg"
 	"github.com/galaxy-future/BridgX/pkg/cloud"
 	"github.com/galaxy-future/BridgX/pkg/cloud/alibaba"
 	"github.com/galaxy-future/BridgX/pkg/cloud/huawei"

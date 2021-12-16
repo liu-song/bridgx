@@ -256,8 +256,8 @@ func getHuaweiCloudClient(ak, region string) (cloud.Provider, error) {
 			return cast, nil
 		}
 	}
-	sk := model.GetAccountSecretByAccountKey(ak)
-	if sk == "" {
+	sk, err := GetAccountSecretByAccountKey(context.Background(), ak)
+	if err != nil || sk == "" {
 		return nil, errors.New("no sk found")
 	}
 	client, err := huawei.New(ak, sk, region)
