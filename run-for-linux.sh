@@ -10,7 +10,7 @@ case $input in
 		;;
 
     [nN][oO]|[nN])
-		echo "Skip mysql install, please check conf/config.yml mysql config, and import init/mysql/default.sql to existing mysql for first experience."
+		echo "Skip mysql install, please check conf/config.yml mysql config, and import init/mysql/* to existing mysql for first install."
     ;;
     *)
 		echo "Invalid input..."
@@ -28,7 +28,7 @@ case $input in
 		;;
 
     [nN][oO]|[nN])
-		echo "Skip etcd install, please check conf/config.yml etcd config"
+		echo "Skip etcd install, please check conf/config.yml etcd config."
     ;;
     *)
 		echo "Invalid input..."
