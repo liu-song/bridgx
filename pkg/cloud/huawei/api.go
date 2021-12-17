@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/galaxy-future/BridgX/internal/logs"
 	"github.com/galaxy-future/BridgX/pkg/cloud"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/auth/basic"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/auth/global"
@@ -37,8 +36,7 @@ type HuaweiCloud struct {
 func New(ak, sk, regionId string) (h *HuaweiCloud, err error) {
 	defer func() {
 		if e := recover(); e != nil {
-			logs.Logger.Errorf("new failed %s,%s,%v", ak, regionId, e)
-			err = fmt.Errorf("%v", e)
+			err = fmt.Errorf("%s,%s,%v", ak, regionId, e)
 		}
 	}()
 	auth := basic.NewCredentialsBuilder().

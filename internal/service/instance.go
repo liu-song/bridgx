@@ -241,7 +241,7 @@ func getAvailableResource(regions []cloud.Region, provider, ak string) ([]model.
 			RegionId: region.RegionId,
 		})
 		if err != nil {
-			logs.Logger.Errorf("region[%s] DescribeAvailableResource failed,err: %v", region.RegionId, err)
+			logs.Logger.Errorf("%s, region[%s] DescribeAvailableResource failed,err: %v", provider, region.RegionId, err)
 		}
 		for zone, ins := range res.InstanceTypes {
 			for _, in := range ins {
@@ -370,17 +370,21 @@ func RefreshCache() error {
 	}
 	if len(ins) == 0 {
 		providers, err := model.GetAllProvider(ctx)
+		if err != nil {
+			logs.Logger.Errorf("GetAllProvider failed:%v", err)
+			return err
+		}
 		for _, provider := range providers {
 			err = SyncInstanceTypes(ctx, provider)
 			if err != nil {
-				logs.Logger.Error("SyncInstanceTypes Error err:%v", err)
-				return err
+				logs.Logger.Errorf("SyncInstanceTypes Error:%v", err)
+				continue
 			}
 		}
 
 		ins, err = model.ScanInstanceType(ctx)
 		if err != nil {
-			logs.Logger.Error("ScanInstanceType Error err:%v", err)
+			logs.Logger.Errorf("ScanInstanceType Error:%v", err)
 			return err
 		}
 	}

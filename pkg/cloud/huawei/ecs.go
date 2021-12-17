@@ -293,7 +293,6 @@ func (p *HuaweiCloud) DescribeAvailableResource(req cloud.DescribeAvailableResou
 		for _, zone := range zones.Zones {
 			zoneIds = append(zoneIds, zone.ZoneId)
 		}
-
 	} else {
 		zoneIds = append(zoneIds, req.ZoneId)
 	}

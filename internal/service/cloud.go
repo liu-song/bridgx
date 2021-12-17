@@ -22,7 +22,6 @@ import (
 )
 
 var clientMap sync.Map
-var huaweiCliMap sync.Map
 
 func ExpandAndRepair(c *types.ClusterInfo, num int, taskId int64) ([]string, error) {
 	tags := []cloud.Tag{{
@@ -215,56 +214,34 @@ func getBatch(num, eachMax int) int {
 }
 
 func getProvider(provider, ak, regionId string) (cloud.Provider, error) {
-	switch provider {
-	case cloud.AlibabaCloud:
-		return getAlibabaCloudClient(ak, regionId)
-	case cloud.HuaweiCloud:
-		return getHuaweiCloudClient(ak, regionId)
-	default:
-		return nil, errors.New("unavailable provider")
-	}
-}
-
-func getAlibabaCloudClient(ak, region string) (cloud.Provider, error) {
-	key := ak + region
+	var client cloud.Provider
+	key := provider + ak + regionId
 	v, exist := clientMap.Load(key)
 	if exist {
-		cast, ok := v.(*alibaba.AlibabaCloud)
-		if ok {
-			return cast, nil
-		}
+		return v.(cloud.Provider), nil
 	}
+
 	ctx := context.Background()
 	sk, err := GetAccountSecretByAccountKey(ctx, ak)
-	if err != nil || sk == "" {
+	if err != nil {
+		return nil, fmt.Errorf("found sk failed, %s", err.Error())
+	}
+	if sk == "" {
 		return nil, errors.New("no sk found")
 	}
-	client, err := alibaba.New(ak, sk, region)
+
+	switch provider {
+	case cloud.AlibabaCloud:
+		client, err = alibaba.New(ak, sk, regionId)
+	case cloud.HuaweiCloud:
+		client, err = huawei.New(ak, sk, regionId)
+	default:
+		return nil, errors.New("invalid provider")
+	}
 	if err != nil {
 		return nil, err
 	}
 	clientMap.Store(key, client)
-	return client, nil
-}
-
-func getHuaweiCloudClient(ak, region string) (cloud.Provider, error) {
-	key := ak + region
-	v, exist := huaweiCliMap.Load(key)
-	if exist {
-		cast, ok := v.(*huawei.HuaweiCloud)
-		if ok {
-			return cast, nil
-		}
-	}
-	sk, err := GetAccountSecretByAccountKey(context.Background(), ak)
-	if err != nil || sk == "" {
-		return nil, errors.New("no sk found")
-	}
-	client, err := huawei.New(ak, sk, region)
-	if err != nil {
-		return nil, err
-	}
-	huaweiCliMap.Store(key, client)
 	return client, nil
 }
 

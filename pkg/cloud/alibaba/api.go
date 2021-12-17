@@ -580,16 +580,20 @@ func (p *AlibabaCloud) GetZones(req cloud.GetZonesRequest) (cloud.GetZonesRespon
 }
 
 func (p *AlibabaCloud) DescribeAvailableResource(req cloud.DescribeAvailableResourceRequest) (cloud.DescribeAvailableResourceResponse, error) {
-	response, err := p.ecsClient.DescribeAvailableResource(&ecsClient.DescribeAvailableResourceRequest{
+	request := &ecsClient.DescribeAvailableResourceRequest{
 		RegionId:            tea.String(req.RegionId),
-		ZoneId:              tea.String(req.ZoneId),
 		DestinationResource: tea.String(Instancetype),
 		NetworkCategory:     tea.String("vpc"),
-	})
+	}
+	if req.ZoneId != "" {
+		request.ZoneId = tea.String(req.ZoneId)
+	}
+	response, err := p.ecsClient.DescribeAvailableResource(request)
 	if err != nil {
 		logs.Logger.Errorf("DescribeAvailableResource AlibabaCloud failed.err: [%v] req[%v]", err, req)
 		return cloud.DescribeAvailableResourceResponse{}, err
 	}
+
 	if response != nil && response.Body != nil && response.Body.AvailableZones != nil {
 		zoneInsType := make(map[string][]cloud.InstanceType, 64)
 		for _, zone := range response.Body.AvailableZones.AvailableZone {
@@ -638,16 +642,15 @@ func (p *AlibabaCloud) DescribeAvailableResource(req cloud.DescribeAvailableReso
 	return cloud.DescribeAvailableResourceResponse{}, errors.New("response is null")
 }
 
+// DescribeInstanceTypes Up to 10 at once
 func (p *AlibabaCloud) DescribeInstanceTypes(req cloud.DescribeInstanceTypesRequest) (cloud.DescribeInstanceTypesResponse, error) {
-	pageSize := 1600
-	insTypeInfo := make([]cloud.InstanceInfo, 0, pageSize)
-	request := &ecsClient.DescribeInstanceTypesRequest{
-		InstanceTypes: tea.StringSlice(req.TypeName),
-		MaxResults:    tea.Int64(int64(pageSize)),
-	}
-	nextToken := ""
-	for {
-		request.NextToken = &nextToken
+	insTypeInfo := make([]cloud.InstanceInfo, 0, len(req.TypeName))
+	var onceNum int64 = 10
+	batchIds := utils.StringSliceSplit(req.TypeName, onceNum)
+	for _, onceIds := range batchIds {
+		request := &ecsClient.DescribeInstanceTypesRequest{
+			InstanceTypes: tea.StringSlice(onceIds),
+		}
 		response, err := p.ecsClient.DescribeInstanceTypes(request)
 		if err != nil {
 			logs.Logger.Errorf("DescribeInstanceTypes AlibabaCloud failed.err: [%v] req[%v]", err, req)
@@ -656,7 +659,6 @@ func (p *AlibabaCloud) DescribeInstanceTypes(req cloud.DescribeInstanceTypesRequ
 		if response == nil || response.Body == nil || response.Body.InstanceTypes == nil {
 			return cloud.DescribeInstanceTypesResponse{}, errors.New("response is null")
 		}
-
 		for _, info := range response.Body.InstanceTypes.InstanceType {
 			insTypeInfo = append(insTypeInfo, cloud.InstanceInfo{
 				Core:        int(*info.CpuCoreCount),
@@ -664,11 +666,6 @@ func (p *AlibabaCloud) DescribeInstanceTypes(req cloud.DescribeInstanceTypesRequ
 				Family:      *info.InstanceTypeFamily,
 				InsTypeName: *info.InstanceTypeId,
 			})
-		}
-
-		nextToken = *response.Body.NextToken
-		if nextToken == "" {
-			break
 		}
 	}
 
