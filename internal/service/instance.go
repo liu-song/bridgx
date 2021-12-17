@@ -365,9 +365,10 @@ func RefreshCache() error {
 	ctx := context.Background()
 	ins, err := model.ScanInstanceType(ctx)
 	if err != nil {
-		logs.Logger.Error("RefreshCache Error err:%v", err)
+		logs.Logger.Errorf("RefreshCache Error:%v", err)
 		return err
 	}
+
 	if len(ins) == 0 {
 		providers, err := model.GetAllProvider(ctx)
 		if err != nil {
@@ -381,7 +382,6 @@ func RefreshCache() error {
 				continue
 			}
 		}
-
 		ins, err = model.ScanInstanceType(ctx)
 		if err != nil {
 			logs.Logger.Errorf("ScanInstanceType Error:%v", err)
@@ -389,6 +389,11 @@ func RefreshCache() error {
 		}
 	}
 
+	load2ZoneInsTypeCache(ins)
+	return nil
+}
+
+func load2ZoneInsTypeCache(ins []model.InstanceType) {
 	zoneInsTypeCache = make(map[string]map[string][]InstanceTypeByZone)
 	for _, in := range ins {
 		provider := in.Provider
@@ -397,12 +402,12 @@ func RefreshCache() error {
 			zoneInsTypeCache[provider] = make(map[string][]InstanceTypeByZone)
 			providerMap = zoneInsTypeCache[provider]
 		}
-
 		zoneId := in.ZoneId
 		_, ok = providerMap[zoneId]
 		if !ok {
 			providerMap[zoneId] = make([]InstanceTypeByZone, 0, 400)
 		}
+
 		i := InstanceTypeByZone{
 			InstanceTypeFamily: in.Family,
 			InstanceType:       in.TypeName,
@@ -414,6 +419,11 @@ func RefreshCache() error {
 			instanceTypeCache[in.TypeName] = i
 		}
 	}
+
+	sortZoneInsTypeCache()
+}
+
+func sortZoneInsTypeCache() {
 	for provider, zoneMap := range zoneInsTypeCache {
 		for zone, typeList := range zoneMap {
 			sort.Slice(typeList, func(i, j int) bool {
@@ -431,5 +441,4 @@ func RefreshCache() error {
 		}
 		zoneInsTypeCache[provider] = zoneMap
 	}
-	return nil
 }

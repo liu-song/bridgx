@@ -1,5 +1,4 @@
-use
-bridgx;
+use bridgx;
 --
 -- Table structure for table `account`
 --
@@ -219,10 +218,9 @@ CREATE TABLE `instance`
 -- Table structure for table `instance_type`
 --
 
-DROP TABLE IF EXISTS `instance_type`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `instance_type`
+CREATE TABLE IF NOT EXISTS `instance_type`
 (
     `id`        bigint(20) NOT NULL AUTO_INCREMENT,
     `provider`  varchar(20)  NOT NULL,
@@ -405,9 +403,3 @@ VALUES (1, 'root', '87d9bb400c0634691f0e3baaf1e2fd0d', 1, 'enable', 1, '2021-11-
 -- init org info
 INSERT INTO `org`
 VALUES (1, '星汉未来', '2021-11-16 03:44:33', '2021-11-16 03:44:33');
--- init instance_type
-LOCK TABLES `instance_type` WRITE;
-/*!40000 ALTER TABLE `instance_type` DISABLE KEYS */;
-
-/*!40000 ALTER TABLE `instance_type` ENABLE KEYS */;
-UNLOCK TABLES;
