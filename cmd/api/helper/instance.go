@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/galaxy-future/BridgX/cmd/api/response"
 	"github.com/galaxy-future/BridgX/internal/constants"
 	"github.com/galaxy-future/BridgX/internal/model"
@@ -154,9 +152,7 @@ func ConvertToInstanceDetail(ctx context.Context, instance *model.Instance) (*re
 	return &ret, nil
 }
 
-func FilterByComputingPowerType(ctx *gin.Context, zones service.ListInstanceTypeResponse) []service.InstanceTypeByZone {
-	computingPowerType := ctx.Query("computing_power_type")
-	instanceTypes := zones.InstanceTypes
+func FilterByComputingPowerType(computingPowerType string, instanceTypes []service.InstanceTypeByZone) []service.InstanceTypeByZone {
 	if computingPowerType == "" {
 		return instanceTypes
 	}
